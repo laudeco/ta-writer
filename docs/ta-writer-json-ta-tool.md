@@ -22,7 +22,7 @@ Technical analyses (TA) are written as Markdown by the `technical-analysis-write
 ## Impact analysis
 - `config/schema/document.openapi.yaml` (new) — single source of truth: validation, form generation and `/api/schema` all derive from it; the user-provided file is extended with `Epic.what`, `Document.dependenciesPageLink`, `Subtask.featureToggle` and `Subtask.sqlImpact { nbColumns, nbRows }` and its `paths` are renamed to `/api/documents`. Risk: a wrong schema change breaks every consumer; covered by TS2 tests.
 - `TaRepositoryInterface::save()` (new) — the only write path; API, UI and adapters (write-back of `ticket` / `pageLink`) all go through it, so history cannot be bypassed. Risk: concurrent writers (UI tab + running export); handled by the expected-version check (409).
-- Confluence (AGIR instance `espace.agir.orange.com`, space `CFDITS`) — the AGIR adapter creates and **updates** pages (unlike the skill, which adopted existing pages untouched). Decision: an update rewrites the **whole** page body from the template/reference page and overwrites earlier edits, human edits included; Confluence's own page history is the only way back.
+- Confluence (AGIR instance `espace.agir.orange.com`, space `CFDITS`) — the AGIR adapter creates and **updates** pages (unlike the skill, which adopted existing pages untouched). Decision: an update rewrites the **whole** page body from the Confluence page template (epic `1942192145`, technical story `655556613`, subtask `3304849414`) and overwrites earlier edits, human edits included; Confluence's own page history is the only way back.
 - Jira (`portail.agir.orange.com`, projects `CFPOPR` / `CFPOBT`) — tickets are created by the AGIR adapter; a replayed POST could duplicate issues, so a created `ticket` is written to the JSON before anything else and a failed POST is never replayed.
 - Secrets — Jira/Confluence PATs live in `.env.local` (gitignored; `JIRA_PAT`, `CONFLUENCE_PAT`, optionally the Symfony secrets vault), the AGIR login lives in the gitignored Chrome profile `data/chrome-profile/`; no secret is ever written to the JSON, its history, an export or a log.
 - PHP image — gains Node, `@mermaid-js/mermaid-cli`, Google Chrome, Xvfb and noVNC (TS12, TS15); the image becomes heavy but stays local.
@@ -3277,7 +3277,7 @@ The skill keeps `root_page_id`, `space`, `ref_epic_page_id`, `ref_ts_page_id`, a
 - `ta-writer/src/Publication/Agir/AgirConfig.php` (new).
 
 ##### How
-- [ ] Create `AgirConfig` (final readonly): `confluenceBase`, `jiraBase`, `space`, `rootPageId`, `refEpicPageId` (default `3398621794`), `refTsPageId` (default `3399544715`), optional `epicTemplateId` / `tsTemplateId` (when set they win over the reference pages), `technicalAnalyst`, `analystUserKey`, `fixVersion`, `labels`, `jiraToken` (never printed).
+- [ ] Create `AgirConfig` (final readonly): `confluenceBase`, `jiraBase`, `space`, `rootPageId`, `epicTemplateId` (default `1942192145`), `tsTemplateId` (default `655556613`), `subTaskTemplateId` (default `3304849414`) — the CFDITS page templates —, optional `refEpicPageId` / `refTsPageId` / `refSubTaskPageId` (a page id used instead of the template when set), `technicalAnalyst`, `analystUserKey`, `fixVersion`, `labels`, `jiraToken` (never printed).
 - [ ] Add `static fromOptions(array $options): self` validating required values (root page id from a URL or an id, like `page_id_of()` in the skill).
 - [ ] Unit tests for `AgirConfig::fromOptions()` (page id from URL, defaults, missing root).
 
@@ -3289,10 +3289,11 @@ classDiagram
         +string jiraBase
         +string space
         +string rootPageId
-        +string refEpicPageId
-        +string refTsPageId
         +string epicTemplateId
         +string tsTemplateId
+        +string subTaskTemplateId
+        +string refEpicPageId
+        +string refTsPageId
         +string fixVersion
         +fromOptions(array options) AgirConfig
     }
@@ -3308,17 +3309,17 @@ classDiagram
 #### TA-WRITER TS17 Subtask2 : Create ReferencePageCloner
 
 ##### What
-Create the service that fills a Confluence page body by `<th>` label, always starting from the reference page or the template body (on creation and on update).
+Create the service that fills a Confluence page body by `<th>` label, always starting from the Confluence template body (or an override reference page), on creation and on update.
 
 ##### Why
-Epic and TS pages are not built from a template API but cloned from a reference page body (`3398621794`, `3399544715`); the tool can start either from such a reference page or from a Confluence template id, and an update rewrites the whole page, overwriting earlier edits.
+The epic, technical story and subtask pages must follow the CFDITS page templates (`1942192145`, `655556613`, `3304849414`); the skill instead cloned reference pages. The tool starts from the template body (or a reference page when overridden), and an update rewrites the whole page, overwriting earlier edits.
 
 ##### Where
 - `ta-writer/src/Publication/Agir/ReferencePageCloner.php` (new).
 
 ##### How
 - [ ] Create `final class ReferencePageCloner` with `__construct(ConfluenceClientInterface $client)`.
-- [ ] Add `fetchBody(string $id, bool $template = false): string` (`GET /rest/api/content/{id}?expand=body.storage` for a reference page, the content-template REST resource for a template id — to verify against the instance, falling back to the reference page when it is unavailable) and `apply(string $storage, array $cells): string`, where `$cells` maps a `<th>` label (Technical Analyst, Epic Jira, Context, Feature Toggle, …) to the XHTML of the cell; strip `ac:macro-id` attributes.
+- [ ] Add `fetchBody(string $id, bool $template = true): string` (the content-template REST resource for a template id — to verify against the instance, since `viewpagetemplate.action?entityId=<id>&key=CFDITS` is the UI URL —, or `GET /rest/api/content/{id}?expand=body.storage` for a reference page override; a template that cannot be read stops the run with a clear error) and `apply(string $storage, array $cells): string`, where `$cells` maps a `<th>` label (Technical Analyst, Epic Jira, Context, Feature Toggle, …) to the XHTML of the cell; strip `ac:macro-id` attributes.
 - [ ] Use `DOMDocument` with the `ac:`/`ri:` namespaces declared; fail with a clear error when a required label is missing in the page.
 - [ ] Context row = first sentence of `what`, Feature Toggle = `featureToggle`, Epic Jira = `jira` macro with the key, Technical Analyst = `<ri:user ri:userkey>` (32-hex key from the analyst table).
 - [ ] Unit tests for `apply()` with a fixture page (cells replaced, other rows untouched, missing label error).
@@ -3348,18 +3349,18 @@ classDiagram
 #### TA-WRITER TS17 Subtask3 : Create SubTaskPageBuilder
 
 ##### What
-Create the generator of the Sub-Task page body (details table, Check / Why / Info panels, tasks, macros, attachments).
+Create the generator of the Sub-Task page body from the subtask template `3304849414` (details table, Check / Why / Info panels, tasks, macros, attachments).
 
 ##### Why
-The skill's Sub-Task page is built entirely in code (layout of template `3304849414`), not cloned; the mapping from the JSON is fixed: `what` → Check, `why` → Why and Context, `where`/`how` → Info.
+The skill reproduced the layout of template `3304849414` in code; the tool now starts from the template itself, so the page follows any template change. The mapping from the JSON is fixed: `what` → Check, `why` → Why and Context, `where`/`how` → Info.
 
 ##### Where
 - `ta-writer/src/Publication/Agir/SubTaskPageBuilder.php` (new).
 
 ##### How
-- [ ] Create `final class SubTaskPageBuilder` with `__construct(ContentConverter $converter, StorageFormatBuilder $storage)`.
-- [ ] Add `build(SubtaskModel $subtask, string $format, array $context, array $attachments): string` where `$context` carries the TS page link/title and the Jira keys.
-- [ ] Details table rows: ID, Status (left at the default of the generated page; an update overwrites it), Name (`displayTitle`), TBL (`ac:link` to the TS page), Jira parent, Jira issue (`jira` macro), Context (one line from `why`), SQL rows / SQL records from `sqlImpact` (`-` when none), Feature Toggle.
+- [ ] Create `final class SubTaskPageBuilder` with `__construct(ContentConverter $converter, StorageFormatBuilder $storage, ReferencePageCloner $cloner)`.
+- [ ] Add `build(SubtaskModel $subtask, string $format, array $context, array $attachments, string $templateBody): string` where `$templateBody` comes from `ReferencePageCloner::fetchBody()`, `$context` carries the TS page link/title and the Jira keys; the details cells are filled by `<th>` label through `ReferencePageCloner::apply()`, the Check / Why / Info panels get their content replaced (a missing panel is added).
+- [ ] Details table rows: ID, Status (left at the template default; an update overwrites it), Name (`displayTitle`), TBL (`ac:link` to the TS page), Jira parent, Jira issue (`jira` macro), Context (one line from `why`), SQL rows / SQL records from `sqlImpact` (`-` when none), Feature Toggle.
 - [ ] Panels: green Check (`what`), orange Why (`why`, only when present), blue Info (`where`, `how`); `- [ ]` steps become `ac:task-list` with page-unique task ids; code blocks and diagrams stay outside task lists.
 - [ ] Unit tests for `build()` (well-formed XML, panel presence rules, task ids unique across panels, Jira macro).
 
@@ -3367,13 +3368,15 @@ The skill's Sub-Task page is built entirely in code (layout of template `3304849
 classDiagram
     class SubTaskPageBuilder {
         <<final>>
-        +__construct(ContentConverter converter, StorageFormatBuilder storage)
-        +build(SubtaskModel subtask, string format, array context, array attachments) string
+        +__construct(ContentConverter converter, StorageFormatBuilder storage, ReferencePageCloner cloner)
+        +build(SubtaskModel subtask, string format, array context, array attachments, string templateBody) string
     }
     class ContentConverter
     class StorageFormatBuilder
+    class ReferencePageCloner
     SubTaskPageBuilder ..> ContentConverter
     SubTaskPageBuilder ..> StorageFormatBuilder
+    SubTaskPageBuilder ..> ReferencePageCloner
     style SubTaskPageBuilder fill:#d4f7d4,stroke:#2e7d32,color:#1b5e20
 ```
 
@@ -3381,7 +3384,7 @@ classDiagram
 
 | Method | IN | Output | Description |
 |---|---|---|---|
-| `build()` | `SubtaskModel $subtask, string $format, array $context, array $attachments` | `string` | Sub-Task page body. |
+| `build()` | `SubtaskModel $subtask, string $format, array $context, array $attachments, string $templateBody` | `string` | Sub-Task page body built from the template. |
 
 #### TA-WRITER TS17 Subtask4 : Create AgirPublisher
 
@@ -3397,9 +3400,9 @@ This is the flow of `technical-analysis-agir-writer` rebuilt around the JSON: dr
 
 ##### How
 - [ ] Create `final class AgirPublisher implements PublisherInterface` with `__construct(DocumentModelBuilder $builder, JiraTicketSynchronizer $jira, AgirAuthenticator $auth, ChromeSession $session, ReferencePageCloner $cloner, SubTaskPageBuilder $subTasks, StorageFormatBuilder $storage, MermaidRenderer $mermaid, TaRepositoryInterface $repository, HttpClientInterface $http)`.
-- [ ] Options (asked by command/UI): `rootPage` (URL or id), `space`, `fixVersion`, `technicalAnalyst`, `refEpicPageId`, `refTsPageId`, `jiraToken` (secret, env `JIRA_PAT`).
+- [ ] Options (asked by command/UI): `rootPage` (URL or id), `space`, `fixVersion`, `technicalAnalyst`, `epicTemplateId`, `tsTemplateId`, `subTaskTemplateId` (defaults above), optional `refEpicPageId` / `refTsPageId` / `refSubTaskPageId`, `jiraToken` (secret, env `JIRA_PAT`).
 - [ ] `publish()` order: check the Jira token → `AgirAuthenticator::ensureLoggedIn()` (asks the user to log in, then resumes) → for each epic: Jira epic, epic page, then each TS (Jira + page), then each subtask (Jira sub-task + page) → `linkDependencies()` once every epic is done → the dependencies page (`TS17 Subtask5`).
-- [ ] Pages: always built from the reference body or template (`ReferencePageCloner::fetchBody()`); when `pageLink` exists the page is **updated with the whole new body**, earlier edits overwritten, through `ConfluencePagePublisher` with a `BrowserConfluenceClient`; titles = `displayTitle`; epic/TS cells from the JSON, subtask body from `SubTaskPageBuilder`; diagrams attached as PNG.
+- [ ] Pages: always built from the template body (`ReferencePageCloner::fetchBody()`, epic `1942192145`, technical story `655556613`, subtask `3304849414`); when `pageLink` exists the page is **updated with the whole new body**, earlier edits overwritten, through `ConfluencePagePublisher` with a `BrowserConfluenceClient`; titles = `displayTitle`; epic/TS cells from the JSON, subtask body from `SubTaskPageBuilder` (also template-based); diagrams attached as PNG.
 - [ ] After each Jira key or page: save `ticket` / `pageLink` into the JSON (origin `agir`), and the per-epic state file (attachment hashes, last step) so a rerun resumes where it stopped.
 - [ ] `dryRun`: one line per object (`would create` / `would update` / `unchanged`), no write, no browser login prompt beyond the read-only checks.
 - [ ] Unit tests for `AgirPublisher` with fakes (one epic and three epics, resume after interruption, update via `pageLink`, dry-run writes nothing, stop on title collision).
@@ -3476,7 +3479,7 @@ classDiagram
 - **Impact analysis** and **Scope**: no field in the JSON, so both sections are omitted from every export. Add `impact` (and `scope`) to the schema, or confirm the omission.
 - **`Epic.required` vs description**: `technicalStories` is required but described as optional; the tool follows `required`.
 - **`dependencies`**: the description says "between epics" but `from`/`to` are free references; the tool accepts epics, user stories and technical stories.
-- **Template instead of reference pages**: the tool accepts a reference page id (defaults `3398621794`, `3399544715`, the ITC1615 pages) **or** a Confluence template id; the template REST access is not verified on the instance. Give the template id/name to use it.
+- **Templates**: the three CFDITS templates are the defaults (epic `1942192145`, technical story `655556613`, subtask `3304849414`, from the `viewpagetemplate.action?entityId=<id>&key=CFDITS` URLs). The REST resource that returns a template body is not verified on the instance (needs a logged-in session); if it is unavailable the run stops, and a reference page id can be given instead.
 - **Overwrite**: interpreted as "rewrite everything, overwriting earlier edits" for Confluence pages (Confluence page history is the only way back). Confirm this reading.
 - **Confluence PAT**: not verified; if the instance rejects it the Confluence API adapter fails with `ConfluenceAuthNotSupportedException` (no fallback).
 - **`dependenciesPageLink`**: new optional `Document` field proposed to remember the dependencies page; the raw JSON export has no separate dependencies page since it already contains `dependencies[]` and every `pageLink`.
