@@ -1,0 +1,332 @@
+openapi: 3.1.0
+info:
+  title: Analysis Document API
+  version: 1.0.0
+  description: |
+    Documentation of the JSON structure describing a functional / technical analysis:
+    project, author, dependencies between epics, and the Epic > User Story / Technical Story > Subtask tree.
+
+    The two `paths` below are only there to expose the schema in Swagger UI; the real value of this
+    file is the `components.schemas` section.
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+tags:
+  - name: Documents
+    description: Analysis documents
+
+paths:
+  /api/documents:
+    post:
+      tags: [Documents]
+      summary: Submit an analysis document
+      operationId: createDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Document'
+      responses:
+        '201':
+          description: Document accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '422':
+          description: The document does not respect the structure
+  /api/documents/{id}:
+    get:
+      tags: [Documents]
+      summary: Get an analysis document
+      operationId: getDocument
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Not found
+components:
+  schemas:
+    Document:
+      type: object
+      description: Root of the JSON document.
+      required: [format, project, author, epics]
+      properties:
+        format:
+          type: string
+          description: Format of the textual content (what / why / how / acceptance criteria, ...) found in the document.
+          enum: [html, text, markdown]
+          examples:
+            - markdown
+        version:
+          type: string
+          description: Version of the document itself.
+          examples:
+            - 1.2.0
+        structureVersion:
+          type: string
+          description: Version of this JSON structure (schema version).
+          examples:
+            - 1.0.0
+        project:
+          $ref: '#/components/schemas/Project'
+        author:
+          $ref: '#/components/schemas/Author'
+        dependencies:
+          type: array
+          description: Dependencies between epics.
+          items:
+            $ref: '#/components/schemas/Dependency'
+        dependenciesPageLink:
+          type: string
+          format: uri
+          description: Page listing the dependencies, written back by the Confluence adapters.
+        epics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Epic'
+
+    Project:
+      type: object
+      required: [name, reference]
+      properties:
+        name:
+          type: string
+          examples:
+            - Cable Self Install
+        reference:
+          type: string
+          examples:
+            - ITC1615
+        link:
+          type: string
+          format: uri
+          examples:
+            - https://jira.examples.com/projects/WC
+
+    Author:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          examples:
+            - Laurent De Coninck
+        username:
+          type: string
+          examples:
+            - ldeconinck
+        email:
+          type: string
+          format: email
+
+    Dependency:
+      type: object
+      description: "`to` is blocked by `from` (`from` must be done before `to`)."
+      required: [from, to]
+      properties:
+        from:
+          type: string
+          description: Reference of the blocking item.
+        to:
+          type: string
+          description: Reference of the blocked item (is blocked by `from`).
+
+    Epic:
+      type: object
+      required: [title, reference, diagrams, resources, technicalStories]
+      properties:
+        title:
+          type: string
+        reference:
+          type: string
+          examples:
+            - E1
+        what:
+          type: string
+          x-widget: textarea
+          description: Context of the epic.
+        ticket:
+          type: string
+          description: Ticket identifier (e.g. Jira key).
+          examples:
+            - WC-1234
+        pageLink:
+          type: string
+          format: uri
+          description: Link to the documentation page (e.g. Confluence).
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        diagrams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagram'
+        userStories:
+          type: array
+          description: Optional.
+          items:
+            $ref: '#/components/schemas/UserStory'
+        technicalStories:
+          type: array
+          description: Optional.
+          items:
+            $ref: '#/components/schemas/TechnicalStory'
+
+    UserStory:
+      type: object
+      required: [title, reference]
+      properties:
+        title:
+          type: string
+        reference:
+          type: string
+          examples:
+            - US1
+        acceptanceCriteria:
+          type: array
+          description: List of acceptance criteria.
+          items:
+            type: string
+        ticket:
+          type: string
+        pageLink:
+          type: string
+          format: uri
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        diagrams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagram'
+
+    TechnicalStory:
+      type: object
+      required: [title, reference]
+      properties:
+        title:
+          type: string
+        reference:
+          type: string
+          examples:
+            - TS3
+        acceptanceCriteriaCovered:
+          type: array
+          description: Acceptance criteria (of the user stories) covered by this technical story.
+          items:
+            type: string
+        ticket:
+          type: string
+        pageLink:
+          type: string
+          format: uri
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        what:
+          type: string
+          x-widget: textarea
+        why:
+          type: string
+          x-widget: textarea
+        subtasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subtask'
+        diagrams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagram'
+
+    Subtask:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        what:
+          type: string
+          x-widget: textarea
+        why:
+          type: string
+          x-widget: textarea
+        where:
+          type: string
+          x-widget: textarea
+        how:
+          type: string
+          x-widget: textarea
+        ticket:
+          type: string
+        pageLink:
+          type: string
+          format: uri
+        reference:
+          type: string
+          examples:
+            - Subtask#1
+        diagrams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagram'
+        criterion:
+          type: string
+          description: Criterion covered / validated by this subtask.
+        featureToggle:
+          type: string
+          description: Feature toggle guarding this subtask.
+        sqlImpact:
+          type: object
+          description: Columns and rows impacted by the migration of this subtask.
+          required: [nbColumns, nbRows]
+          properties:
+            nbColumns:
+              type: integer
+              minimum: 0
+            nbRows:
+              type: integer
+              minimum: 0
+
+    Resource:
+      type: object
+      description: Generic resource (epic, technical story). The type is free.
+      required: [type, content]
+      properties:
+        type:
+          type: string
+          enum: [image, link, ticket, note]
+        content:
+          type: string
+          x-widget: textarea
+
+    Diagram:
+      type: object
+      required: [type, content]
+      properties:
+        type:
+          type: string
+          enum: [mermaid]
+        content:
+          type: string
+          x-widget: code
+          description: Diagram source code.
