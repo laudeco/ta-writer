@@ -12,6 +12,7 @@ Technical analyses (TA) are written as Markdown by the `technical-analysis-write
   - Schema validation and business validation (unique references, dependency cycles, acceptance-criteria coverage).
   - Publication core (Symfony command + UI page, per-adapter options) and five adapters: raw JSON, Markdown, PDF (mPDF), Confluence API (page tree), Confluence AGIR (Chrome driven by PHP, Jira tickets, page create/update).
   - Reference prefix `<project> <epic> <ts> <subtask> - <title>` before every title, 1 to n epics everywhere, links written back into the JSON (`ticket`, `pageLink`).
+  - A **dependencies page** in every export that has pages (Markdown, PDF, Confluence API, AGIR), each end linking to its `pageLink`.
 - Out of scope:
   - Code analysis, AI generation, importing the Markdown produced by the skills.
   - Authentication/authorization of the tool itself (local single-user tool).
@@ -19,10 +20,11 @@ Technical analyses (TA) are written as Markdown by the `technical-analysis-write
   - Scope and Impact-analysis sections of the skill's TA format (not carried by the JSON, so they are omitted from exports; see Open points).
 
 ## Impact analysis
-- `config/schema/document.openapi.yaml` (new) — single source of truth: validation, form generation and `/api/schema` all derive from it; the user-provided file is extended with `Epic.what`, `Subtask.feature_toggle` and `Subtask.sql_impact { nb_columns, nb_rows }` and its `paths` are renamed to `/api/documents`. Risk: a wrong schema change breaks every consumer; covered by TS2 tests.
+- `config/schema/document.openapi.yaml` (new) — single source of truth: validation, form generation and `/api/schema` all derive from it; the user-provided file is extended with `Epic.what`, `Document.dependenciesPageLink`, `Subtask.featureToggle` and `Subtask.sqlImpact { nbColumns, nbRows }` and its `paths` are renamed to `/api/documents`. Risk: a wrong schema change breaks every consumer; covered by TS2 tests.
 - `TaRepositoryInterface::save()` (new) — the only write path; API, UI and adapters (write-back of `ticket` / `pageLink`) all go through it, so history cannot be bypassed. Risk: concurrent writers (UI tab + running export); handled by the expected-version check (409).
-- Confluence (AGIR instance `espace.agir.orange.com`, space `CFDITS`) — the AGIR adapter creates and **updates** pages (unlike the skill, which adopted existing pages untouched). Risk: overwriting human edits; only cells/sections derived from the JSON are rewritten.
+- Confluence (AGIR instance `espace.agir.orange.com`, space `CFDITS`) — the AGIR adapter creates and **updates** pages (unlike the skill, which adopted existing pages untouched). Decision: an update rewrites the **whole** page body from the template/reference page and overwrites earlier edits, human edits included; Confluence's own page history is the only way back.
 - Jira (`portail.agir.orange.com`, projects `CFPOPR` / `CFPOBT`) — tickets are created by the AGIR adapter; a replayed POST could duplicate issues, so a created `ticket` is written to the JSON before anything else and a failed POST is never replayed.
+- Secrets — Jira/Confluence PATs live in `.env.local` (gitignored; `JIRA_PAT`, `CONFLUENCE_PAT`, optionally the Symfony secrets vault), the AGIR login lives in the gitignored Chrome profile `data/chrome-profile/`; no secret is ever written to the JSON, its history, an export or a log.
 - PHP image — gains Node, `@mermaid-js/mermaid-cli`, Google Chrome, Xvfb and noVNC (TS12, TS15); the image becomes heavy but stays local.
 - No existing code is modified: the repository is new. `worklog` is read-only reference (Makefile, `docker/`, `.php-cs-fixer.dist.php`, `phpstan.dist.neon` at level 6, `phpunit.xml.dist`).
 
@@ -41,11 +43,12 @@ No feature toggle — new internal tooling with no existing behaviour to protect
 | AC5 — Publication from a Symfony command and from the UI, format chosen by the user, per-adapter questions, extensible adapters | • TS10 Subtask1 - Create the publication contracts<br>• TS10 Subtask2 - Create PublisherRegistry<br>• TS10 Subtask3 - Create PublicationService<br>• TS10 Subtask4 - Create PublishCommand<br>• TS10 Subtask5 - Create PublishController and the publish page |
 | AC6 — Raw JSON export, and the JSON Schema is published | • TS11 Subtask1 - Create JsonPublisher<br>• TS5 Subtask5 - Create SchemaController |
 | AC7 — Markdown and PDF share the same layout; the PDF has a cover, a clickable table of contents, header/footer, dependency and AC sections, and a page break before every epic and every technical story | • TS7 Subtask4 - Create DocumentModelBuilder<br>• TS7 Subtask5 - Add the calculated sections<br>• TS11 Subtask2 - Create MarkdownPublisher<br>• TS13 Subtask1..3 (PdfPublisher, cover/TOC/header-footer, page breaks) |
-| AC8 — Confluence API publishes a page tree (TA > TS > Subtask), updates pages that already exist, and saves each page link in the JSON | • TS14 Subtask1 - Create ConfluenceClientInterface and HttpConfluenceClient<br>• TS14 Subtask2 - Create ConfluencePagePublisher<br>• TS14 Subtask3 - Create StorageFormatBuilder<br>• TS14 Subtask4 - Create ConfluenceApiPublisher |
+| AC8 — Confluence API publishes a page tree (TA > TS > Subtask), fully rewrites pages that already exist, and saves each page link in the JSON; an instance that rejects a PAT makes the adapter fail with an explicit "not usable" exception | • TS14 Subtask1 - Create ConfluenceClientInterface and HttpConfluenceClient<br>• TS14 Subtask2 - Create ConfluencePagePublisher<br>• TS14 Subtask3 - Create StorageFormatBuilder<br>• TS14 Subtask4 - Create ConfluenceApiPublisher |
 | AC9 — AGIR: Chrome driven entirely by PHP, user authenticates when needed, publication resumes, pages are created/updated, Jira epics/technical stories/subtasks are created and their keys and links written back into the JSON | • TS15 Subtask1..4 (browser session)<br>• TS16 Subtask1..3 (Jira)<br>• TS17 Subtask1..4 (AGIR publisher) |
 | AC10 — Every title is preceded by the top-to-bottom reference (`<project> <epic> <ts> <subtask> - <title>`) in documents, Confluence pages and the UI | • TS7 Subtask1 - Create ReferenceResolver<br>• TS9 Subtask1 - Create EditorController<br>• TS11 Subtask2 - Create MarkdownPublisher<br>• TS14 Subtask4 - Create ConfluenceApiPublisher<br>• TS17 Subtask4 - Create AgirPublisher |
 | AC11 — One or several epics work everywhere without special case | • TS7 Subtask4 - Create DocumentModelBuilder<br>• TS17 Subtask4 - Create AgirPublisher |
 | AC12 — Documents are validated (schema + business rules) before save and before any export | • TS2 Subtask4 - Create SchemaValidationException and SchemaValidator<br>• TS6 Subtask1..5 (business rules)<br>• TS10 Subtask3 - Create PublicationService |
+| AC13 — Every export contains a dependencies page (section/page) whose entries link to the `pageLink` found in the JSON | • TS7 Subtask5 - Add the calculated sections<br>• TS11 Subtask2 - Create MarkdownPublisher<br>• TS13 Subtask3 - Add the page breaks and the calculated sections<br>• TS14 Subtask5 - Add the dependencies page to ConfluenceApiPublisher<br>• TS17 Subtask5 - Add the dependencies page to AgirPublisher<br>• Note: the raw JSON export already carries `dependencies[]` and every `pageLink` |
 
 ## TS dependencies
 
@@ -272,13 +275,15 @@ Declare where documents and exports live (inside the project) and make the paths
 The decision is that analyses live in `ta-writer/data/analyses`, not in `technical_analyses`; without a single configured root every class would hard-code its own path.
 
 ##### Where
-- `ta-writer/.env` (new keys `TA_STORAGE_DIR`, `TA_EXPORT_DIR`, `TA_HISTORY_MAX`) and `.env.local` (not committed).
+- `ta-writer/.env` (new keys `TA_STORAGE_DIR`, `TA_EXPORT_DIR`, `TA_HISTORY_MAX`) and `.env.local` (not committed, holds the secrets `JIRA_PAT`, `CONFLUENCE_PAT`).
 - `ta-writer/config/services.yaml` (new parameters `app.storage_dir`, `app.export_dir`, `app.history_max`) — pattern: `worklog/config/services.yaml`.
 - `ta-writer/data/.gitkeep` is **not** created; `data/` is gitignored (TS1 Subtask1).
 
 ##### How
 - [ ] Add `TA_STORAGE_DIR=%kernel.project_dir%/data/analyses`, `TA_EXPORT_DIR=%kernel.project_dir%/data/exports`, `TA_HISTORY_MAX=0` (0 = unlimited) in `.env`.
 - [ ] Map them to the parameters above in `services.yaml`, so services receive `string $storageDir` through `bind`.
+- [ ] Declare the secrets as empty placeholders in `.env` (`JIRA_PAT=`, `CONFLUENCE_PAT=`) with the real values only in `.env.local`; add `bin/console secrets:set` as the optional vault alternative.
+- [ ] Rule for every later subtask: a secret is read from the environment or asked with hidden input, and never written to the JSON, the history, an export or a log.
 - [ ] Unit tests for the parameter resolution (kernel test reading the container parameters).
 
 After deployment: `bin/console debug:container --parameters` lists the three parameters (AC1).
@@ -298,7 +303,7 @@ After deployment: `bin/console debug:container --parameters` lists the three par
 Copy the user-provided OpenAPI 3.1 file into the project as the single source of truth and add the three decided fields.
 
 ##### Why
-The UI form, the validation and `/api/schema` must all derive from one file; the three fields (`what` on the epic, `feature_toggle` and `sql_impact` on the subtask) are missing from the provided structure.
+The UI form, the validation and `/api/schema` must all derive from one file; the three fields (`what` on the epic, `featureToggle` and `sqlImpact` on the subtask) are missing from the provided structure.
 
 ##### Where
 - `ta-writer/config/schema/document.openapi.yaml` (new).
@@ -306,20 +311,26 @@ The UI form, the validation and `/api/schema` must all derive from one file; the
 ##### How
 - [ ] Paste the provided YAML unchanged, then change `paths` to `/api/documents` and `/api/documents/{id}`.
 - [ ] Add `what: string` to `components.schemas.Epic.properties`.
-- [ ] Add `feature_toggle: string` and `sql_impact: { type: object, required: [nb_columns, nb_rows], properties: { nb_columns: integer, nb_rows: integer } }` to `Subtask.properties` (snake_case as requested, while the rest is camelCase — flagged in Open points).
+- [ ] Add `featureToggle: string` and `sqlImpact: { type: object, required: [nbColumns, nbRows], properties: { nbColumns: integer, nbRows: integer } }` to `Subtask.properties`.
+- [ ] Add `dependenciesPageLink: { type: string, format: uri }` to `Document.properties` (link of the dependencies page, written by the Confluence adapters so the next export updates the same page).
 - [ ] Keep `Document.required: [format, project, author, epics]` and `Epic.required` as provided (the `technicalStories` inconsistency is in Open points).
 
 ```yaml
+# config/schema/document.openapi.yaml — Document addition
+dependenciesPageLink:
+  type: string
+  format: uri
+  description: Page listing the dependencies, written back by the Confluence adapters.
 # config/schema/document.openapi.yaml — Subtask additions
-feature_toggle:
+featureToggle:
   type: string
   description: Feature toggle guarding this subtask.
-sql_impact:
+sqlImpact:
   type: object
-  required: [nb_columns, nb_rows]
+  required: [nbColumns, nbRows]
   properties:
-    nb_columns: { type: integer, minimum: 0 }
-    nb_rows:    { type: integer, minimum: 0 }
+    nbColumns: { type: integer, minimum: 0 }
+    nbRows:    { type: integer, minimum: 0 }
 ```
 
 After deployment: `yq '.components.schemas.Subtask.properties | keys' config/schema/document.openapi.yaml` lists both new keys (AC4).
@@ -418,7 +429,7 @@ The API, the UI save and every export must refuse a document that breaks the str
 - [ ] Create `SchemaValidationException extends \RuntimeException` with `__construct(array $errors)` and `getErrors(): array` (list of `{path, message}`).
 - [ ] Create `final class SchemaValidator` with `__construct(SchemaProvider $provider)` and `validate(array $document): void`.
 - [ ] Use `Opis\JsonSchema\Validator` with the schema from `getDocumentJsonSchema()`; convert `ValidationError` objects to `{path, message}` using `ErrorFormatter`.
-- [ ] Unit tests for `SchemaValidator` (valid document, missing `format`, wrong enum, nested `sql_impact` type error).
+- [ ] Unit tests for `SchemaValidator` (valid document, missing `format`, wrong enum, nested `sqlImpact` type error).
 
 ```mermaid
 classDiagram
@@ -1689,15 +1700,15 @@ classDiagram
 Extend `DocumentModelBuilder::build()` with three calculated sections: dependencies (with display titles), AC coverage, SQL impact totals.
 
 ##### Why
-The PDF and Markdown show a dependency table, an AC coverage table and SQL impact tables; they must be computed once from the JSON (`dependencies[]`, `acceptanceCriteria*`, `sql_impact`), not hand-written.
+The PDF and Markdown show a dependency table, an AC coverage table and SQL impact tables; they must be computed once from the JSON (`dependencies[]`, `acceptanceCriteria*`, `sqlImpact`), not hand-written.
 
 ##### Where
 - `ta-writer/src/Render/DocumentModelBuilder.php` (changed).
 
 ##### How
-- [ ] Add private `buildDependencies()`: for each `{from, to}` resolve both ends to display titles; unresolved ends keep the raw text.
+- [ ] Add private `buildDependencies()`: for each `{from, to}` resolve both ends to display titles and to the `pageLink` of the matching epic / user story / technical story (`fromLink`, `toLink`, `null` when the JSON has none); unresolved ends keep the raw text.
 - [ ] Add private `buildAcCoverage()`: one row per user-story criterion with the technical stories (display titles) that list it; unknown covered criteria go in a final "not matched" row.
-- [ ] Add private `buildSqlImpact()`: per technical story and for the document, sum `sql_impact.nb_columns` and `nb_rows` of the subtasks that have one; a subtask without `sql_impact` is `—`.
+- [ ] Add private `buildSqlImpact()`: per technical story and for the document, sum `sqlImpact.nbColumns` and `nbRows` of the subtasks that have one; a subtask without `sqlImpact` is `—`.
 - [ ] Unit tests for the three sections (blocked-by direction `to` blocked by `from`, partially covered criteria, sums).
 
 ```mermaid
@@ -1715,7 +1726,7 @@ classDiagram
 
 | Method | IN | Output | Description |
 |---|---|---|---|
-| `buildDependencies()` (private) | `array $document` | `array` | Rows `from → to` with display titles. |
+| `buildDependencies()` (private) | `array $document` | `array` | Rows `from → to` with display titles and page links. |
 | `buildAcCoverage()` (private) | `array $document` | `array` | Criterion and covering technical stories. |
 | `buildSqlImpact()` (private) | `array $document` | `array` | Columns/rows per technical story and total. |
 
@@ -2365,6 +2376,7 @@ Other tools consume the document as is; the schema file makes the export self-de
 - [ ] Create `final class JsonPublisher implements PublisherInterface` with `__construct(SchemaProvider $schema, AtomicFileWriter $writer, string $exportDir)`.
 - [ ] `getName()` = `json`; options: `output` (path, default `<exportDir>/<YYYYMMDD>/<slug>.json`), `withSchema` (bool).
 - [ ] `publish()`: write `json_encode($request->document)` unchanged (same pretty-print flags as the repository), plus `<slug>.schema.json` when asked; `dryRun` only reports the target paths.
+- [ ] The raw JSON already carries `dependencies[]` and every `pageLink`, so no extra dependencies page is generated for this format.
 - [ ] Unit tests for `JsonPublisher` (content identical, schema file, dry-run writes nothing).
 
 ```mermaid
@@ -2408,7 +2420,7 @@ The Markdown export must match the PDF content (decision: one render model, not 
 
 ##### How
 - [ ] Create `final class MarkdownPublisher implements PublisherInterface` with `__construct(DocumentModelBuilder $builder, ContentConverter $converter, Environment $twig, AtomicFileWriter $writer, string $exportDir)`.
-- [ ] Template order: title/cover info, table of contents (links), then per epic: `# <displayTitle>`, Context (`what`), resources, diagrams as ` ```mermaid ` blocks, user stories with their criteria, technical stories (`## …`), subtasks (`### …`) with What / Why / Where / How, feature toggle line, SQL impact line; finally the dependency, AC coverage and SQL impact tables.
+- [ ] Template order: title/cover info, table of contents (links), then per epic: `# <displayTitle>`, Context (`what`), resources, diagrams as ` ```mermaid ` blocks, user stories with their criteria, technical stories (`## …`), subtasks (`### …`) with What / Why / Where / How, feature toggle line, SQL impact line; finally the AC coverage and SQL impact tables and a **Dependencies** page/section (own heading at the end), each end written `[displayTitle](pageLink)` when the JSON has a `pageLink`, plain title otherwise.
 - [ ] Convert each text field with `ContentConverter::toMarkdown($content, $document['format'])`.
 - [ ] Omit empty sections (no Scope or Impact section exists in the JSON).
 - [ ] Unit tests for `MarkdownPublisher` (one epic, three epics, `html` and `text` formats, empty sections omitted, titles with prefix).
@@ -2608,7 +2620,7 @@ classDiagram
 #### TA-WRITER TS13 Subtask3 : Add the page breaks and the calculated sections
 
 ##### What
-Add a page break before every epic and every technical story, and the dependency, AC coverage and SQL impact sections to the PDF.
+Add a page break before every epic and every technical story, and a dedicated dependencies page plus the AC coverage and SQL impact sections to the PDF.
 
 ##### Why
 The requested layout starts each epic and each TS on a new page; the calculated tables from `TS7 Subtask5` must appear in the document.
@@ -2618,7 +2630,7 @@ The requested layout starts each epic and each TS on a new page; the calculated 
 
 ##### How
 - [ ] Emit `<pagebreak />` before each epic except the first (it already follows the TOC) and before every technical story, including the first of an epic; never before a subtask.
-- [ ] Render the dependency table (`to` is blocked by `from`), the AC coverage table (criterion → covering technical stories) and the SQL impact table (columns/rows per TS and total, `—` when absent) from `DocumentModel`; omit a section when it is empty.
+- [ ] Render the dependencies on their own page (page break before it; `to` is blocked by `from`; each end is a hyperlink to its `pageLink` when present), the AC coverage table (criterion → covering technical stories) and the SQL impact table (columns/rows per TS and total, `—` when absent) from `DocumentModel`; omit a section when it is empty.
 - [ ] Unit tests for the page structure (page count for 1 epic/2 TS vs 3 epics/…, no blank first page).
 
 ```mermaid
@@ -2643,6 +2655,7 @@ classDiagram
 | TS14 Subtask2 - Create ConfluencePagePublisher | — | — |
 | TS14 Subtask3 - Create StorageFormatBuilder | — | — |
 | TS14 Subtask4 - Create ConfluenceApiPublisher | — | — |
+| TS14 Subtask5 - Add the dependencies page to ConfluenceApiPublisher | — | — |
 
 #### TA-WRITER TS14 Subtask1 : Create ConfluenceClientInterface and HttpConfluenceClient
 
@@ -2659,10 +2672,11 @@ The Confluence API adapter calls the REST API directly while the AGIR adapter go
 - [ ] Create `ConfluenceResponse` (final readonly): `int $status`, `array $body`.
 - [ ] Create `ConfluenceClientInterface`: `request(string $method, string $path, ?array $json = null): ConfluenceResponse` and `upload(string $pageId, string $filename, string $bytes): ConfluenceResponse`.
 - [ ] Create `final class HttpConfluenceClient implements ConfluenceClientInterface` with `__construct(HttpClientInterface $http, string $baseUrl, string $token)`; Bearer token, `X-Atlassian-Token: no-check`, `Accept: application/json`; GET retried on 429/5xx, POST/PUT never replayed.
+- [ ] Create `ConfluenceAuthNotSupportedException extends \RuntimeException`; when a Bearer-authenticated request answers 401/403, throw it with the message "This Confluence instance does not accept a Personal Access Token: the Confluence API adapter cannot be used (use the agir adapter)". No browser fallback.
 - [ ] The token is never logged or printed.
-- [ ] Unit tests for `HttpConfluenceClient` with `MockHttpClient` (headers, status mapping, GET retry, no POST retry).
+- [ ] Unit tests for `HttpConfluenceClient` with `MockHttpClient` (headers, status mapping, GET retry, no POST retry, 401/403 → `ConfluenceAuthNotSupportedException`).
 
-> ⚠️ To confirm: the Confluence instance accepts a PAT; if it does not, the "Confluence API" adapter has to use the browser client of TS15 as well.
+> ⚠️ Decision: if the instance does not support a PAT, the Confluence API adapter is simply unusable and reports it through this exception; it never falls back to the browser session.
 
 ```mermaid
 classDiagram
@@ -2687,12 +2701,28 @@ classDiagram
     ConfluenceClientInterface <|.. HttpConfluenceClient
     ConfluenceClientInterface ..> ConfluenceResponse
     HttpConfluenceClient ..> HttpClientInterface
+    class ConfluenceAuthNotSupportedException
+    class RuntimeException {
+        <<vendor>>
+    }
+    class Exception {
+        <<vendor>>
+    }
+    class Throwable {
+        <<interface>>
+        <<vendor>>
+    }
+    ConfluenceAuthNotSupportedException --|> RuntimeException
+    RuntimeException --|> Exception
+    Exception ..|> Throwable
+    HttpConfluenceClient ..> ConfluenceAuthNotSupportedException
     style ConfluenceClientInterface fill:#d4f7d4,stroke:#2e7d32,color:#1b5e20
     style HttpConfluenceClient fill:#d4f7d4,stroke:#2e7d32,color:#1b5e20
     style ConfluenceResponse fill:#d4f7d4,stroke:#2e7d32,color:#1b5e20
+    style ConfluenceAuthNotSupportedException fill:#d4f7d4,stroke:#2e7d32,color:#1b5e20
 ```
 
-`HttpConfluenceClient implements ConfluenceClientInterface`; the interface has no parent; `ConfluenceResponse` is standalone.
+`HttpConfluenceClient implements ConfluenceClientInterface`; the interface has no parent; `ConfluenceResponse` is standalone; `ConfluenceAuthNotSupportedException extends \RuntimeException` (`RuntimeException extends Exception implements Throwable`).
 
 | Method | IN | Output | Description |
 |---|---|---|---|
@@ -2791,6 +2821,7 @@ The Confluence API adapter has no reference page to clone, so it must generate v
 - [ ] Create `final class StorageFormatBuilder` with `__construct(ContentConverter $converter)`.
 - [ ] Add `epic(EpicModel $epic, string $format, array $attachments): string`, `technicalStory(TechnicalStoryModel $ts, string $format, array $attachments): string`, `subtask(SubtaskModel $subtask, string $format, array $attachments): string`.
 - [ ] Convert content with `ContentConverter::toHtml()` and make it XHTML (`<br/>`, escaped entities); fenced code → `ac:structured-macro` `code`; `- [ ]` items → `ac:task-list`; mermaid diagrams → `<ac:image><ri:attachment ri:filename="…"/></ac:image>` (the PNG is uploaded by the publisher).
+- [ ] Add `dependencies(array $rows): string` rendering the rows of `DocumentModel::dependencies` as a table; each end is an `<a href>` to its `pageLink` when present, plain text otherwise.
 - [ ] Feature toggle and SQL impact rendered as a small table; resources: `link`/`ticket`/`note` as list items, `image` as attachment or link.
 - [ ] Unit tests for `StorageFormatBuilder` (well-formed XML for each page type, code macro, task list, attachment reference).
 
@@ -2802,6 +2833,7 @@ classDiagram
         +epic(EpicModel epic, string format, array attachments) string
         +technicalStory(TechnicalStoryModel ts, string format, array attachments) string
         +subtask(SubtaskModel subtask, string format, array attachments) string
+        +dependencies(array rows) string
     }
     class ContentConverter
     StorageFormatBuilder ..> ContentConverter
@@ -2815,6 +2847,7 @@ classDiagram
 | `epic()` | `EpicModel $epic, string $format, array $attachments` | `string` | Epic page body. |
 | `technicalStory()` | `TechnicalStoryModel $ts, string $format, array $attachments` | `string` | TS page body. |
 | `subtask()` | `SubtaskModel $subtask, string $format, array $attachments` | `string` | Subtask page body. |
+| `dependencies()` | `array $rows` | `string` | Dependencies page body (table, each end linked to its `pageLink`). |
 
 #### TA-WRITER TS14 Subtask4 : Create ConfluenceApiPublisher
 
@@ -2833,6 +2866,8 @@ Page titles carry the full reference prefix (unique per page), and the stored li
 - [ ] `publish()`: for each epic (one to n) upsert the epic page under `rootPageId`, then each technical story page under it, then each subtask page under its TS; titles = `displayTitle`; build the client with the token.
 - [ ] Upload each diagram PNG (`MermaidRenderer`) as an attachment before the final body update; a render failure is reported and the page is published without the image.
 - [ ] After each page, re-read the document, set `pageLink` at the node path (epic, user story if it has its own page, technical story, subtask) and save through `TaRepositoryInterface::save()` with origin `confluence` and the current version as `expectedVersion`.
+- [ ] Catch `ConfluenceAuthNotSupportedException` and return a `failed` result carrying its message (adapter not usable, no fallback).
+- [ ] Pages are always fully rewritten when they exist (no merge with earlier edits); the dependencies page comes last (`TS14 Subtask5`).
 - [ ] `dryRun`: print `would create` / `would update` / `unchanged` per page without writing.
 - [ ] Unit tests for `ConfluenceApiPublisher` with fakes (3 epics tree, update path via `pageLink`, dry-run, write-back order, title collision stops).
 
@@ -2868,6 +2903,40 @@ classDiagram
 | Method | IN | Output | Description |
 |---|---|---|---|
 | `publish()` | `PublishRequest $request` | `PublishResult` | Publishes or dry-runs the page tree. |
+
+#### TA-WRITER TS14 Subtask5 : Add the dependencies page to ConfluenceApiPublisher
+
+##### What
+Make `ConfluenceApiPublisher` publish, once every epic, technical story and subtask page exists, one **Dependencies** page under the root page listing the document dependencies with a link to each page.
+
+##### Why
+Every export must include a dependencies page whose entries point to the pages stored in the JSON (`pageLink`); it can only be built after the other pages exist, and the next run must update the same page.
+
+##### Where
+- `ta-writer/src/Publication/Adapter/ConfluenceApiPublisher.php` (changed).
+- `Document.dependenciesPageLink` in `ta-writer/config/schema/document.openapi.yaml` (see `TS2 Subtask1`).
+
+##### How
+- [ ] After the last page, re-read the document (fresh `pageLink` values) and build the rows from `DocumentModel::dependencies` (`TS7 Subtask5`).
+- [ ] Render the body with `StorageFormatBuilder::dependencies()` and upsert it through `ConfluencePagePublisher` under `rootPageId`, title `<project.reference> - Dependencies`, `knownPageUrl` = `dependenciesPageLink`.
+- [ ] Save `dependenciesPageLink` into the JSON (origin `confluence`, current version as `expectedVersion`).
+- [ ] An end without `pageLink` is printed as plain text and reported as a warning line.
+- [ ] Unit tests for the dependencies page (created after all pages, update through `dependenciesPageLink`, end without link, dry-run).
+
+```mermaid
+classDiagram
+    class PublisherInterface {
+        <<interface>>
+        +publish(PublishRequest request) PublishResult
+    }
+    class ConfluenceApiPublisher {
+        <<final>>
+        +publish(PublishRequest request) PublishResult
+    }
+    PublisherInterface <|.. ConfluenceApiPublisher
+```
+
+`ConfluenceApiPublisher implements PublisherInterface` (changed: `publish()`, no new class).
 
 ### TA-WRITER TS15 - Browser session for AGIR
 
@@ -3194,6 +3263,7 @@ classDiagram
 | TS17 Subtask2 - Create ReferencePageCloner | — | — |
 | TS17 Subtask3 - Create SubTaskPageBuilder | — | — |
 | TS17 Subtask4 - Create AgirPublisher | — | — |
+| TS17 Subtask5 - Add the dependencies page to AgirPublisher | — | — |
 
 #### TA-WRITER TS17 Subtask1 : Create AgirConfig
 
@@ -3207,7 +3277,7 @@ The skill keeps `root_page_id`, `space`, `ref_epic_page_id`, `ref_ts_page_id`, a
 - `ta-writer/src/Publication/Agir/AgirConfig.php` (new).
 
 ##### How
-- [ ] Create `AgirConfig` (final readonly): `confluenceBase`, `jiraBase`, `space`, `rootPageId`, `refEpicPageId` (default `3398621794`), `refTsPageId` (default `3399544715`), `technicalAnalyst`, `analystUserKey`, `fixVersion`, `labels`, `jiraToken` (never printed).
+- [ ] Create `AgirConfig` (final readonly): `confluenceBase`, `jiraBase`, `space`, `rootPageId`, `refEpicPageId` (default `3398621794`), `refTsPageId` (default `3399544715`), optional `epicTemplateId` / `tsTemplateId` (when set they win over the reference pages), `technicalAnalyst`, `analystUserKey`, `fixVersion`, `labels`, `jiraToken` (never printed).
 - [ ] Add `static fromOptions(array $options): self` validating required values (root page id from a URL or an id, like `page_id_of()` in the skill).
 - [ ] Unit tests for `AgirConfig::fromOptions()` (page id from URL, defaults, missing root).
 
@@ -3221,6 +3291,8 @@ classDiagram
         +string rootPageId
         +string refEpicPageId
         +string refTsPageId
+        +string epicTemplateId
+        +string tsTemplateId
         +string fixVersion
         +fromOptions(array options) AgirConfig
     }
@@ -3236,19 +3308,19 @@ classDiagram
 #### TA-WRITER TS17 Subtask2 : Create ReferencePageCloner
 
 ##### What
-Create the service that fills a Confluence page body by `<th>` label, starting from the reference page on creation or from the current page on update.
+Create the service that fills a Confluence page body by `<th>` label, always starting from the reference page or the template body (on creation and on update).
 
 ##### Why
-Epic and TS pages are not built from a template API but cloned from a reference page body (`3398621794`, `3399544715`); an update must only rewrite the cells derived from the JSON and keep everything humans edited.
+Epic and TS pages are not built from a template API but cloned from a reference page body (`3398621794`, `3399544715`); the tool can start either from such a reference page or from a Confluence template id, and an update rewrites the whole page, overwriting earlier edits.
 
 ##### Where
 - `ta-writer/src/Publication/Agir/ReferencePageCloner.php` (new).
 
 ##### How
 - [ ] Create `final class ReferencePageCloner` with `__construct(ConfluenceClientInterface $client)`.
-- [ ] Add `fetchBody(string $pageId): string` (`GET /rest/api/content/{id}?expand=body.storage`) and `apply(string $storage, array $cells): string`, where `$cells` maps a `<th>` label (Technical Analyst, Epic Jira, Context, Feature Toggle, …) to the XHTML of the cell; strip `ac:macro-id` attributes.
+- [ ] Add `fetchBody(string $id, bool $template = false): string` (`GET /rest/api/content/{id}?expand=body.storage` for a reference page, the content-template REST resource for a template id — to verify against the instance, falling back to the reference page when it is unavailable) and `apply(string $storage, array $cells): string`, where `$cells` maps a `<th>` label (Technical Analyst, Epic Jira, Context, Feature Toggle, …) to the XHTML of the cell; strip `ac:macro-id` attributes.
 - [ ] Use `DOMDocument` with the `ac:`/`ri:` namespaces declared; fail with a clear error when a required label is missing in the page.
-- [ ] Context row = first sentence of `what`, Feature Toggle = `feature_toggle`, Epic Jira = `jira` macro with the key, Technical Analyst = `<ri:user ri:userkey>` (32-hex key from the analyst table).
+- [ ] Context row = first sentence of `what`, Feature Toggle = `featureToggle`, Epic Jira = `jira` macro with the key, Technical Analyst = `<ri:user ri:userkey>` (32-hex key from the analyst table).
 - [ ] Unit tests for `apply()` with a fixture page (cells replaced, other rows untouched, missing label error).
 
 ```mermaid
@@ -3256,7 +3328,7 @@ classDiagram
     class ReferencePageCloner {
         <<final>>
         +__construct(ConfluenceClientInterface client)
-        +fetchBody(string pageId) string
+        +fetchBody(string id, bool template) string
         +apply(string storage, array cells) string
     }
     class ConfluenceClientInterface {
@@ -3270,7 +3342,7 @@ classDiagram
 
 | Method | IN | Output | Description |
 |---|---|---|---|
-| `fetchBody()` | `string $pageId` | `string` | Storage body of a page. |
+| `fetchBody()` | `string $id, bool $template` | `string` | Storage body of a reference page or template. |
 | `apply()` | `string $storage, array $cells` | `string` | Body with the labelled cells replaced. |
 
 #### TA-WRITER TS17 Subtask3 : Create SubTaskPageBuilder
@@ -3287,7 +3359,7 @@ The skill's Sub-Task page is built entirely in code (layout of template `3304849
 ##### How
 - [ ] Create `final class SubTaskPageBuilder` with `__construct(ContentConverter $converter, StorageFormatBuilder $storage)`.
 - [ ] Add `build(SubtaskModel $subtask, string $format, array $context, array $attachments): string` where `$context` carries the TS page link/title and the Jira keys.
-- [ ] Details table rows: ID, Status (kept from the existing page on update), Name (`displayTitle`), TBL (`ac:link` to the TS page), Jira parent, Jira issue (`jira` macro), Context (one line from `why`), SQL rows / SQL records from `sql_impact` (`-` when none), Feature Toggle.
+- [ ] Details table rows: ID, Status (left at the default of the generated page; an update overwrites it), Name (`displayTitle`), TBL (`ac:link` to the TS page), Jira parent, Jira issue (`jira` macro), Context (one line from `why`), SQL rows / SQL records from `sqlImpact` (`-` when none), Feature Toggle.
 - [ ] Panels: green Check (`what`), orange Why (`why`, only when present), blue Info (`where`, `how`); `- [ ]` steps become `ac:task-list` with page-unique task ids; code blocks and diagrams stay outside task lists.
 - [ ] Unit tests for `build()` (well-formed XML, panel presence rules, task ids unique across panels, Jira macro).
 
@@ -3326,8 +3398,8 @@ This is the flow of `technical-analysis-agir-writer` rebuilt around the JSON: dr
 ##### How
 - [ ] Create `final class AgirPublisher implements PublisherInterface` with `__construct(DocumentModelBuilder $builder, JiraTicketSynchronizer $jira, AgirAuthenticator $auth, ChromeSession $session, ReferencePageCloner $cloner, SubTaskPageBuilder $subTasks, StorageFormatBuilder $storage, MermaidRenderer $mermaid, TaRepositoryInterface $repository, HttpClientInterface $http)`.
 - [ ] Options (asked by command/UI): `rootPage` (URL or id), `space`, `fixVersion`, `technicalAnalyst`, `refEpicPageId`, `refTsPageId`, `jiraToken` (secret, env `JIRA_PAT`).
-- [ ] `publish()` order: check the Jira token → `AgirAuthenticator::ensureLoggedIn()` (asks the user to log in, then resumes) → for each epic: Jira epic, epic page, then each TS (Jira + page), then each subtask (Jira sub-task + page) → `linkDependencies()` once every epic is done.
-- [ ] Pages: create from the reference body (`ReferencePageCloner::fetchBody()`), or update from the **current** body when `pageLink` exists, through `ConfluencePagePublisher` with a `BrowserConfluenceClient`; titles = `displayTitle`; epic/TS cells from the JSON, subtask body from `SubTaskPageBuilder`; diagrams attached as PNG.
+- [ ] `publish()` order: check the Jira token → `AgirAuthenticator::ensureLoggedIn()` (asks the user to log in, then resumes) → for each epic: Jira epic, epic page, then each TS (Jira + page), then each subtask (Jira sub-task + page) → `linkDependencies()` once every epic is done → the dependencies page (`TS17 Subtask5`).
+- [ ] Pages: always built from the reference body or template (`ReferencePageCloner::fetchBody()`); when `pageLink` exists the page is **updated with the whole new body**, earlier edits overwritten, through `ConfluencePagePublisher` with a `BrowserConfluenceClient`; titles = `displayTitle`; epic/TS cells from the JSON, subtask body from `SubTaskPageBuilder`; diagrams attached as PNG.
 - [ ] After each Jira key or page: save `ticket` / `pageLink` into the JSON (origin `agir`), and the per-epic state file (attachment hashes, last step) so a rerun resumes where it stopped.
 - [ ] `dryRun`: one line per object (`would create` / `would update` / `unchanged`), no write, no browser login prompt beyond the read-only checks.
 - [ ] Unit tests for `AgirPublisher` with fakes (one epic and three epics, resume after interruption, update via `pageLink`, dry-run writes nothing, stop on title collision).
@@ -3367,14 +3439,46 @@ classDiagram
 |---|---|---|---|
 | `publish()` | `PublishRequest $request` | `PublishResult` | Dry-runs or runs the AGIR publication, resumable. |
 
+#### TA-WRITER TS17 Subtask5 : Add the dependencies page to AgirPublisher
+
+##### What
+Make `AgirPublisher` publish, after all epics, a **Dependencies** page under the root page, each dependency end linking to its page.
+
+##### Why
+The dependencies page is required in every export; in AGIR it complements the Jira `Blocks` links with a readable page, and its link must be stored so the next run updates it.
+
+##### Where
+- `ta-writer/src/Publication/Adapter/AgirPublisher.php` (changed).
+
+##### How
+- [ ] After `linkDependencies()`, re-read the document and build the rows from `DocumentModel::dependencies`.
+- [ ] Render with `StorageFormatBuilder::dependencies()` and upsert through `ConfluencePagePublisher` (browser client) under the root page, title `<project.reference> - Dependencies`, `knownPageUrl` = `dependenciesPageLink`; the page is fully rewritten when it exists.
+- [ ] Save `dependenciesPageLink` into the JSON (origin `agir`) and list the line in the dry-run (`would create` / `would update`).
+- [ ] Unit tests for the dependencies page (created last, update through the stored link, dry-run).
+
+```mermaid
+classDiagram
+    class PublisherInterface {
+        <<interface>>
+        +publish(PublishRequest request) PublishResult
+    }
+    class AgirPublisher {
+        <<final>>
+        +publish(PublishRequest request) PublishResult
+    }
+    PublisherInterface <|.. AgirPublisher
+```
+
+`AgirPublisher implements PublisherInterface` (changed: `publish()`, no new class).
+
+
 ## Open points to confirm
-- **JSON naming**: `feature_toggle` and `sql_impact` are snake_case as requested while the provided schema is camelCase; keep or rename?
 - **Impact analysis** and **Scope**: no field in the JSON, so both sections are omitted from every export. Add `impact` (and `scope`) to the schema, or confirm the omission.
 - **`Epic.required` vs description**: `technicalStories` is required but described as optional; the tool follows `required`.
 - **`dependencies`**: the description says "between epics" but `from`/`to` are free references; the tool accepts epics, user stories and technical stories.
-- **Jira summaries**: use the same `displayTitle` (reference prefix) as Confluence titles? The skill used `Subtask #n - Name` and `<epic title> : TS<n> - <Name>`.
-- **Confluence PAT**: confirm the Confluence instance accepts a Personal Access Token for the "Confluence API" adapter, otherwise it also runs through the browser session.
-- **Reference pages**: the default `ref_epic_page_id` / `ref_ts_page_id` are the ITC1615 pages from the skill; confirm they stay valid for any new project.
-- **Sections rewritten on update**: only cells derived from the JSON (by `<th>` label); confirm the exact list so human-edited fields (workflow status, analyst, TA Story) are never overwritten.
-- **Not planned**: the skill's GitLab diagrams-repo publication (one commit per diagram) and the synthetic `TS0 - Documentation` page; diagrams are attached to pages as PNG instead. Say so if they are required.
-- **Table "TS dependencies" per TS** of the skill has no counterpart in the JSON (only document-level `dependencies`); not rendered per TS.
+- **Jira `summary`** (the ticket title shown in Jira lists and boards): the tool proposes the same `displayTitle` as the Confluence page (`<project> <epic> <ts> <subtask> - <title>`); the skill used `Subtask #n - Name` and `<epic title> : TS<n> - <Name>`. Confirm.
+- **Template instead of reference pages**: the tool accepts a reference page id (defaults `3398621794`, `3399544715`, the ITC1615 pages) **or** a Confluence template id; the template REST access is not verified on the instance. Give the template id/name to use it.
+- **Overwrite**: interpreted as "rewrite everything, overwriting earlier edits" for Confluence pages (Confluence page history is the only way back). Confirm this reading.
+- **Confluence PAT**: not verified; if the instance rejects it the Confluence API adapter fails with `ConfluenceAuthNotSupportedException` (no fallback).
+- **`dependenciesPageLink`**: new optional `Document` field proposed to remember the dependencies page; the raw JSON export has no separate dependencies page since it already contains `dependencies[]` and every `pageLink`.
+- **Not planned**: the skill's GitLab diagrams-repo publication (one commit per diagram) and the synthetic `TS0 - Documentation` page; diagrams are attached to pages as PNG instead.
