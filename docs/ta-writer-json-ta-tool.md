@@ -3182,7 +3182,7 @@ Each created object needs its `ticket` recorded immediately, otherwise an interr
 - [ ] Create `JiraSyncOptions` (final readonly): `string $epicProject` (`CFPOPR`), `string $storyProject` (`CFPOBT`), `?string $fixVersion`, `array $labels`, `bool $technicalEpic`.
 - [ ] Create `final class JiraTicketSynchronizer` with `__construct(JiraClient $jira, TaRepositoryInterface $repository, DocumentModelBuilder $builder)` and `sync(string $documentId, JiraSyncOptions $options, bool $dryRun): array` (one message line per object).
 - [ ] Per epic: skip if `ticket` is set, else look for the summary and create an Epic (label `technical_epic` for a technical epic); save `ticket` in the JSON (origin `agir`) before going on.
-- [ ] Per technical story: Technical Story in the story project with Epic Link `customfield_10000` = epic key; per subtask: `Sub-task` with `parent` = TS key; `versions`/`fixVersions` and labels like the skill; summary = `displayTitle` (to confirm, see Open points).
+- [ ] Per technical story: Technical Story in the story project with Epic Link `customfield_10000` = epic key; per subtask: `Sub-task` with `parent` = TS key; `versions`/`fixVersions` and labels like the skill; summary = `displayTitle`, i.e. the same reference-prefixed title as the Confluence page (`<project> <epic> <ts> <subtask> - <title>`), for the epic, the technical stories and the sub-tasks.
 - [ ] Idempotence: existing `ticket` → untouched; no `ticket` but a child with the same summary → adopt its key; a POST error stops the run without replay.
 - [ ] Unit tests for `sync()` with fakes (create tree, resume after interruption, adopt existing, dry-run creates nothing, write-back order).
 
@@ -3476,7 +3476,6 @@ classDiagram
 - **Impact analysis** and **Scope**: no field in the JSON, so both sections are omitted from every export. Add `impact` (and `scope`) to the schema, or confirm the omission.
 - **`Epic.required` vs description**: `technicalStories` is required but described as optional; the tool follows `required`.
 - **`dependencies`**: the description says "between epics" but `from`/`to` are free references; the tool accepts epics, user stories and technical stories.
-- **Jira `summary`** (the ticket title shown in Jira lists and boards): the tool proposes the same `displayTitle` as the Confluence page (`<project> <epic> <ts> <subtask> - <title>`); the skill used `Subtask #n - Name` and `<epic title> : TS<n> - <Name>`. Confirm.
 - **Template instead of reference pages**: the tool accepts a reference page id (defaults `3398621794`, `3399544715`, the ITC1615 pages) **or** a Confluence template id; the template REST access is not verified on the instance. Give the template id/name to use it.
 - **Overwrite**: interpreted as "rewrite everything, overwriting earlier edits" for Confluence pages (Confluence page history is the only way back). Confirm this reading.
 - **Confluence PAT**: not verified; if the instance rejects it the Confluence API adapter fails with `ConfluenceAuthNotSupportedException` (no fallback).
