@@ -214,8 +214,14 @@
         if (!form) {
             return;
         }
+        // the first visit of an analysis: every block starts collapsed; after that the saved state is kept
+        var firstVisit = localStorage.getItem(storageKey()) === null;
         store = loadStore();
         initIn(form);
+        if (firstVisit) {
+            blocks.forEach(function (block) { setCollapsed(block, true, false); });
+            save();
+        }
         form.addEventListener('input', function (event) {
             if (/\[(reference|title)\]$/.test(event.target.name || '')) {
                 var item = event.target.closest('[data-item]');
