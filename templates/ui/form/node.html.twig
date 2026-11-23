@@ -1,0 +1,72 @@
+{# One node of the generated form. node: FieldNode, name: HTML name, value: current value (or null). Recursive. #}
+{% if node.widget == 'object' %}
+    <fieldset class="object{% if node.name == 'data' %} root{% endif %}">
+        {% if node.name != 'data' %}
+            <legend>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</legend>
+            {% if node.description %}<p class="help">{{ node.description }}</p>{% endif %}
+        {% endif %}
+        {% for child in node.children %}
+            {% include 'ui/form/node.html.twig' with {
+                node: child,
+                name: name ~ '[' ~ child.name ~ ']',
+                value: (value is iterable and value[child.name] is defined) ? value[child.name] : null,
+            } only %}
+        {% endfor %}
+    </fieldset>
+{% elseif node.widget == 'array' %}
+    <div class="collection" data-collection>
+        <div class="collection-head">
+            <strong>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</strong>
+            <span class="count" data-count>{{ (value ?? [])|length }}</span>
+        </div>
+        {% if node.description %}<p class="help">{{ node.description }}</p>{% endif %}
+        <div class="items" data-items>
+            {% for item in (value ?? []) %}
+                <div class="item" data-item>
+                    <div class="item-bar">
+                        <span class="item-no">#{{ loop.index }}</span>
+                        <button type="button" data-move="up" title="Move up">&uarr;</button>
+                        <button type="button" data-move="down" title="Move down">&darr;</button>
+                        <button type="button" class="danger" data-remove>Remove</button>
+                    </div>
+                    {% include 'ui/form/node.html.twig' with { node: node.item, name: name ~ '[' ~ loop.index0 ~ ']', value: item } only %}
+                </div>
+            {% endfor %}
+        </div>
+        <template data-template>
+            <div class="item" data-item>
+                <div class="item-bar">
+                    <span class="item-no">new</span>
+                    <button type="button" data-move="up" title="Move up">&uarr;</button>
+                    <button type="button" data-move="down" title="Move down">&darr;</button>
+                    <button type="button" class="danger" data-remove>Remove</button>
+                </div>
+                {% include 'ui/form/node.html.twig' with { node: node.item, name: name ~ '[__INDEX__]', value: null } only %}
+            </div>
+        </template>
+        <button type="button" class="add" data-add>+ Add {{ node.label|lower }}</button>
+    </div>
+{% elseif node.widget == 'select' %}
+    <label class="field">
+        <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
+        <select name="{{ name }}">
+            <option value="">&mdash;</option>
+            {% for option in node.options %}
+                <option value="{{ option }}"{% if value == option %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+        </select>
+    </label>
+{% elseif node.widget == 'textarea' or node.widget == 'code' %}
+    <label class="field wide">
+        <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
+        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
+        <textarea name="{{ name }}" rows="{{ node.widget == 'code' ? 10 : 4 }}" class="{{ node.widget }}"{% if node.placeholder %} placeholder="{{ node.placeholder }}"{% endif %}>{{ value }}</textarea>
+    </label>
+{% else %}
+    {% set input = node.widget == 'integer' ? 'number' : (node.widget == 'url' ? 'url' : (node.widget == 'email' ? 'email' : 'text')) %}
+    <label class="field">
+        <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
+        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
+        <input type="{{ input }}" name="{{ name }}" value="{{ value }}"{% if node.placeholder %} placeholder="{{ node.placeholder }}"{% endif %}{% if node.widget == 'integer' %} min="0" step="1"{% endif %}>
+    </label>
+{% endif %}

@@ -1,0 +1,10 @@
+{% extends 'ui/base.html.twig' %}
+{% block title %}Version {{ number }} - TA Writer{% endblock %}
+{% block body %}
+<div class="page-head">
+    <h1>Version {{ number }} of <code>{{ id }}</code></h1>
+    <a href="/documents/{{ id }}/versions">Back to the history</a>
+</div>
+{% if number != current %}<div class="flash">You are reading an earlier version. It is read-only here: restore it from the history to make it current.</div>{% endif %}
+<pre class="json">{{ json }}</pre>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'ui/base.html.twig' %}
+{% block title %}Publish {{ id }} - TA Writer{% endblock %}
+{% block body %}
+<div class="page-head">
+    <h1>Publish <code>{{ id }}</code></h1>
+    <a href="/documents/{{ id }}/edit">Back to the analysis</a>
+</div>
+
+{% if result is not null %}
+    <section class="result {{ result.status }}">
+        <h2>{% if result.status == 'dry-run' %}Dry run: nothing was written{% elseif result.status == 'done' %}Published{% else %}Not published{% endif %}</h2>
+        <ul class="messages">
+            {% for line in result.messages %}<li>{{ line }}</li>{% endfor %}
+        </ul>
+        {% if result.artifacts is not empty %}
+            <p>Files:</p>
+            <ul>{% for file in result.artifacts %}<li><code>{{ file }}</code></li>{% endfor %}</ul>
+        {% endif %}
+        {% if result.status == 'dry-run' %}
+            <form method="post" action="/documents/{{ id }}/publish" class="confirm">
+                <input type="hidden" name="format" value="{{ format }}">
+                {% for name, answer in answers %}<input type="hidden" name="options[{{ name }}]" value="{{ answer }}">{% endfor %}
+                <input type="hidden" name="confirm" value="1">
+                <button type="submit" class="primary">Confirm and publish to {{ format }}</button>
+            </form>
+        {% endif %}
+    </section>
+{% endif %}
+
+<form method="get" action="/documents/{{ id }}/publish" class="publish-form">
+    <label class="field">
+        <span>Format</span>
+        <select name="format" onchange="this.form.submit()">
+            {% for name, label in formats %}<option value="{{ name }}"{% if name == format %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+    </label>
+</form>
+
+<form method="post" action="/documents/{{ id }}/publish" class="publish-form">
+    <input type="hidden" name="format" value="{{ format }}">
+    {% for option in options %}
+        <label class="field">
+            <span>{{ option.label }}{% if option.required %} <span class="req">*</span>{% endif %}</span>
+            <input type="text" name="options[{{ option.name }}]" value="{{ answers[option.name] ?? option.default ?? '' }}"{% if option.required %} required{% endif %}>
+        </label>
+    {% endfor %}
+    <div class="savebar">
+        <button type="submit" name="dry" value="1">Dry run</button>
+        <a href="/documents/{{ id }}/edit">Cancel</a>
+    </div>
+</form>
+{% endblock %}

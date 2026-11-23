@@ -1,0 +1,30 @@
+{% extends 'ui/base.html.twig' %}
+{% block body %}
+<div class="page-head">
+    <h1>Analyses</h1>
+    <a class="button" href="/documents/new">New analysis</a>
+</div>
+{% if items is empty %}
+    <p class="muted">No analysis yet. Create one, or inject one with the API (<code>POST /api/documents</code>).</p>
+{% else %}
+    <table class="grid">
+        <thead><tr><th>Id</th><th>Project</th><th>Reference</th><th>Version</th><th>Updated</th><th></th></tr></thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <td><code>{{ item.id }}</code></td>
+                <td>{{ item.title }}</td>
+                <td>{{ item.reference }}</td>
+                <td>{{ item.version }}</td>
+                <td>{{ item.updatedAt|slice(0, 16)|replace({'T': ' '}) }}</td>
+                <td class="actions">
+                    <a href="/documents/{{ item.id }}/edit">Edit</a>
+                    <a href="/documents/{{ item.id }}/versions">Versions</a>
+                    <a href="/documents/{{ item.id }}/publish">Publish</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+{% endblock %}

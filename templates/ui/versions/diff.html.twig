@@ -1,0 +1,25 @@
+{% extends 'ui/base.html.twig' %}
+{% block title %}Diff {{ from }} to {{ to }} - TA Writer{% endblock %}
+{% block body %}
+<div class="page-head">
+    <h1>Changes from version {{ from }} to version {{ to }}</h1>
+    <a href="/documents/{{ id }}/versions">Back to the history</a>
+</div>
+{% if changes is empty %}
+    <p class="muted">No difference.</p>
+{% else %}
+    <table class="grid">
+        <thead><tr><th>Path</th><th>Change</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+        {% for change in changes %}
+            <tr>
+                <td><code>{{ change.path }}</code></td>
+                <td><span class="tag {{ change.type }}">{{ change.type }}</span></td>
+                <td class="small">{{ change.before is null ? '' : (change.before is iterable ? change.before|json_encode : change.before) }}</td>
+                <td class="small">{{ change.after is null ? '' : (change.after is iterable ? change.after|json_encode : change.after) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+{% endblock %}

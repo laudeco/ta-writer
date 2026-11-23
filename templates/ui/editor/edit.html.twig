@@ -1,0 +1,33 @@
+{% extends 'ui/base.html.twig' %}
+{% block title %}{{ id ? 'Edit ' ~ id : 'New analysis' }} - TA Writer{% endblock %}
+{% block body %}
+<div class="page-head">
+    <h1>{{ id ? id : 'New analysis' }}</h1>
+    {% if id %}
+        <div class="links">
+            <span class="badge">version {{ version }}</span>
+            <a href="/documents/{{ id }}/versions">History</a>
+            <a href="/documents/{{ id }}/publish">Publish</a>
+            <a href="/api/documents/{{ id }}" target="_blank">JSON</a>
+        </div>
+    {% endif %}
+</div>
+
+{% if errors is not empty %}
+    <div class="flash error">
+        <strong>The analysis was not saved.</strong>
+        <ul>
+            {% for error in errors %}<li><code>{{ error.path }}</code> {{ error.message }}</li>{% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor">
+    {% if id %}<input type="hidden" name="_version" value="{{ version }}">{% endif %}
+    {% include 'ui/form/node.html.twig' with { node: form, name: 'data', value: document } only %}
+    <div class="savebar">
+        <button type="submit" class="primary">Save</button>
+        <a href="/">Cancel</a>
+    </div>
+</form>
+{% endblock %}
