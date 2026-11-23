@@ -205,17 +205,27 @@
             if (!driver) {
                 return;
             }
+            // the rich body and the Source button follow the condition; the plain field is shown when the body is not
             var apply = function () {
                 var on = driver.value === f.getAttribute('data-when-equals');
-                f.classList.toggle('is-hidden', !on);
+                var body = f.querySelector('[data-rich-body]');
+                if (body) {
+                    body.hidden = !on;
+                }
                 f.querySelectorAll('[data-rich-mode], [data-rich-html], [data-rich-source-view] textarea, input[name$="[original]"]').forEach(function (i) {
                     i.disabled = !on;
                 });
+                var toggle = f.querySelector('[data-rich-toggle]');
+                if (toggle) {
+                    toggle.hidden = !on;
+                }
                 var plain = f.querySelector('.plain-fallback');
                 if (plain) {
                     plain.disabled = on;
+                    plain.hidden = on;
                 }
             };
+            apply();
             driver.addEventListener('change', apply);
         });
     }

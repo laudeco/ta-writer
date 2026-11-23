@@ -53,22 +53,24 @@
        what the editor produced in `html`, and the Source view in `source`. The mode says which one to use. #}
     {% set original = value is iterable ? '' : (value ?? '') %}
     {% set rich_on = node.richWhen is null or (siblings is iterable and siblings[node.richWhen.field] is defined and siblings[node.richWhen.field] == node.richWhen.equals) %}
-    <div class="field wide rich{% if not rich_on %} is-hidden{% endif %}" data-rich
+    <div class="field wide rich" data-rich
          {% if node.richWhen is not null %}data-when-field="{{ node.richWhen.field }}" data-when-equals="{{ node.richWhen.equals }}"{% endif %}>
         <span class="field-label">{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
         {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
-        <div class="rich-shell" data-rich-shell data-format="{{ doc_format }}">
-            <div class="rich-editor" data-rich-editor data-html="{{ rich_html(original, doc_format) }}" data-rich-ready="false"></div>
-            <div class="rich-source" data-rich-source-view hidden>
-                <textarea name="{{ name }}[source]" class="code" rows="8" aria-label="{{ node.label }} source"{% if not rich_on %} disabled{% endif %}>{{ original }}</textarea>
+        {# the rich body is hidden when its condition is off; the plain field stays visible in that case (a resource that is not a note) #}
+        <div data-rich-body{% if not rich_on %} hidden{% endif %}>
+            <div class="rich-shell" data-rich-shell data-format="{{ doc_format }}">
+                <div class="rich-editor" data-rich-editor data-html="{{ rich_html(original, doc_format) }}" data-rich-ready="false"></div>
+                <div class="rich-source" data-rich-source-view hidden>
+                    <textarea name="{{ name }}[source]" class="code" rows="8" aria-label="{{ node.label }} source"{% if not rich_on %} disabled{% endif %}>{{ original }}</textarea>
+                </div>
             </div>
+            <input type="hidden" name="{{ name }}[original]" value="{{ original }}"{% if not rich_on %} disabled{% endif %}>
+            <input type="hidden" name="{{ name }}[mode]" value="raw" data-rich-mode{% if not rich_on %} disabled{% endif %}>
+            <input type="hidden" name="{{ name }}[html]" value="" data-rich-html{% if not rich_on %} disabled{% endif %}>
         </div>
-        <input type="hidden" name="{{ name }}[original]" value="{{ original }}"{% if not rich_on %} disabled{% endif %}>
-        <input type="hidden" name="{{ name }}[mode]" value="raw" data-rich-mode{% if not rich_on %} disabled{% endif %}>
-        <input type="hidden" name="{{ name }}[html]" value="" data-rich-html{% if not rich_on %} disabled{% endif %}>
-        {# plain fallback, used when the rich editor is switched off by its condition (a resource that is not a note) #}
         {% if node.richWhen is not null %}
-            <textarea class="plain-fallback" name="{{ name }}" rows="3"{% if rich_on %} disabled{% endif %}>{{ original }}</textarea>
+            <textarea class="plain-fallback" name="{{ name }}" rows="3" placeholder="URL, ticket key or text" aria-label="{{ node.label }}"{% if rich_on %} disabled hidden{% endif %}>{{ original }}</textarea>
         {% endif %}
     </div>
 {% elseif node.widget == 'select' %}
