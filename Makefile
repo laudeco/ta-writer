@@ -2,7 +2,7 @@ USERID=$(shell id -u)
 GROUPID=$(shell id -g)
 RUN=USERID=$(USERID) GROUPID=$(GROUPID) docker compose run --rm php
 
-.PHONY: help build start console composer-install test stan sh publish
+.PHONY: help build up start console composer-install test stan sh publish
 
 help: ## Shows the available commands
 	@cat $(MAKEFILE_LIST) | grep -e "^[a-zA-Z_\-]*: *.*## *" | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -13,7 +13,10 @@ build: ## Builds the PHP image (PHP 8.1, intl, zip, mbstring, dom, xml)
 composer-install: ## Installs the PHP dependencies (vendor/ is not committed)
 	$(RUN) composer install --no-scripts
 
-start: ## Serves the API and the UI on http://127.0.0.1:8080
+up: ## Starts the application in the background (API and UI on http://127.0.0.1:8080)
+	USERID=$(USERID) GROUPID=$(GROUPID) docker compose up -d
+
+start: ## Starts the application in the foreground (logs in the terminal)
 	USERID=$(USERID) GROUPID=$(GROUPID) docker compose up
 
 console: ## Runs a console command. Usage: make console c="about"
