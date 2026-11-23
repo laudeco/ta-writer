@@ -49,7 +49,7 @@
 {% elseif node.widget == 'select' %}
     <label class="field">
         <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
-        <select name="{{ name }}">
+        <select name="{{ name }}"{% if node.readOnly %} disabled{% endif %}>
             <option value="">&mdash;</option>
             {% for option in node.options %}
                 <option value="{{ option }}"{% if value == option %} selected{% endif %}>{{ option }}</option>
@@ -67,6 +67,6 @@
     <label class="field">
         <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
         {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
-        <input type="{{ input }}" name="{{ name }}" value="{{ value }}"{% if node.placeholder %} placeholder="{{ node.placeholder }}"{% endif %}{% if node.widget == 'integer' %} min="0" step="1"{% endif %}>
+        <input type="{{ input }}" name="{{ name }}" value="{{ value }}"{% if node.placeholder %} placeholder="{{ node.placeholder }}"{% endif %}{% if node.widget == 'integer' %} min="0" step="1"{% endif %}{% if node.readOnly %} readonly class="readonly"{% endif %}>
     </label>
 {% endif %}

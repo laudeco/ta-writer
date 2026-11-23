@@ -72,12 +72,14 @@ components:
             - markdown
         version:
           type: string
-          description: Version of the document itself.
+          readOnly: true
+          description: "Version of the document. Set by the server: 1.0.0 at creation, then the patch number goes up at each edit of its content."
           examples:
-            - 1.2.0
+            - 1.0.1
         structureVersion:
           type: string
-          description: Version of this JSON structure (schema version).
+          readOnly: true
+          description: "Version of this JSON structure. Set by the server from info.version of this file; never written by a client."
           examples:
             - 1.0.0
         project:

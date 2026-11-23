@@ -36,6 +36,7 @@ final class SchemaFormBuilder
         }
 
         $description = isset($schema['description']) ? (string) $schema['description'] : null;
+        $readOnly = (bool) ($schema['readOnly'] ?? false);
         $placeholder = isset($schema['examples'][0]) ? (string) $schema['examples'][0] : null;
         $type = $schema['type'] ?? 'string';
 
@@ -56,7 +57,7 @@ final class SchemaFormBuilder
         }
 
         if (isset($schema['enum'])) {
-            return new FieldNode($name, 'select', $required, $description, $placeholder, array_map('strval', $schema['enum']));
+            return new FieldNode($name, 'select', $required, $description, $placeholder, array_map('strval', $schema['enum']), [], null, $readOnly);
         }
 
         $widget = match (true) {
@@ -68,6 +69,6 @@ final class SchemaFormBuilder
             default => 'text',
         };
 
-        return new FieldNode($name, $widget, $required, $description, $placeholder);
+        return new FieldNode($name, $widget, $required, $description, $placeholder, [], [], null, $readOnly);
     }
 }

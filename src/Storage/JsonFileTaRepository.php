@@ -7,6 +7,7 @@ namespace App\Storage;
 use App\Storage\Exception\DocumentNotFoundException;
 use App\Storage\Exception\StaleVersionException;
 use App\Storage\History\VersionMeta;
+use App\Schema\SchemaProvider;
 use App\Storage\History\VersionStore;
 
 /**
@@ -23,6 +24,7 @@ final class JsonFileTaRepository implements TaRepositoryInterface
         private readonly AtomicFileWriter $writer,
         private readonly SlugGenerator $slugger,
         private readonly VersionStore $versions,
+        private readonly SchemaProvider $schema,
     ) {
     }
 
@@ -71,6 +73,9 @@ final class JsonFileTaRepository implements TaRepositoryInterface
         $lock = $this->lock($file);
 
         try {
+            $stored = is_file($file) ? $this->decode($file) : null;
+            $data = DocumentVersion::prepare($stored, $data, $origin, $this->structureVersion());
+
             $current = $this->versions->currentNumber($versionsDir);
             if ($expectedVersion !== null && $expectedVersion !== $current) {
                 throw new StaleVersionException($expectedVersion, $current);
@@ -122,6 +127,14 @@ final class JsonFileTaRepository implements TaRepositoryInterface
         $this->get($id);
 
         return $this->versions->read($this->versionsDir($id), $number);
+    }
+
+    /**
+     * The version of the OpenAPI file: the structure a document is written against.
+     */
+    private function structureVersion(): string
+    {
+        return (string) ($this->schema->getOpenApi()['info']['version'] ?? DocumentVersion::INITIAL);
     }
 
     private function fileOf(string $id): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Storage;
 
+use App\Schema\SchemaProvider;
 use App\Storage\AtomicFileWriter;
 use App\Storage\Exception\DocumentNotFoundException;
 use App\Storage\Exception\StaleVersionException;
@@ -22,7 +23,13 @@ final class JsonFileTaRepositoryTest extends TestCase
     {
         $this->dir = sys_get_temp_dir().'/ta-writer-test-'.bin2hex(random_bytes(4));
         $writer = new AtomicFileWriter();
-        $this->repository = new JsonFileTaRepository($this->dir, $writer, new SlugGenerator(), new VersionStore($writer, new DocumentDiffer()));
+        $this->repository = new JsonFileTaRepository(
+            $this->dir,
+            $writer,
+            new SlugGenerator(),
+            new VersionStore($writer, new DocumentDiffer()),
+            new SchemaProvider(__DIR__.'/../../config/schema/document.openapi.yaml'),
+        );
     }
 
     protected function tearDown(): void
@@ -74,7 +81,7 @@ final class JsonFileTaRepositoryTest extends TestCase
         self::assertSame([1, 2], array_map(static fn ($v) => $v->number, $versions));
         self::assertSame(['ui'], [$versions[1]->origin]);
         self::assertSame('first', $this->repository->getVersionData($stored->id, 1)['epics'][0]['what']);
-        self::assertSame(['/epics/0/what'], $versions[1]->changedPaths);
+        self::assertSame(['/epics/0/what', '/version'], $versions[1]->changedPaths, 'the content and the version number changed');
     }
 
     public function testStaleWriteIsRefusedAndNothingIsOverwritten(): void
@@ -115,6 +122,46 @@ final class JsonFileTaRepositoryTest extends TestCase
         } finally {
             self::assertDirectoryExists($this->dir.'/'.substr($stored->id, 0, 8).'/demo1.versions');
         }
+    }
+
+    public function testTheDocumentVersionIsIncrementedOnEditAndKeptForIdenticalSaves(): void
+    {
+        $stored = $this->repository->save(null, $this->doc('first'), 'api');
+        self::assertSame('1.0.0', $stored->data['version']);
+
+        $edited = $this->repository->save($stored->id, $this->doc('second'), 'ui', 1);
+        self::assertSame('1.0.1', $edited->data['version']);
+        self::assertSame('1.0.1', $this->repository->get($stored->id)->data['version']);
+
+        $same = $this->repository->save($stored->id, $this->doc('second'), 'ui', 2);
+        self::assertSame('1.0.1', $same->data['version'], 'no change, no increment');
+    }
+
+    public function testTheStructureVersionComesFromTheSchemaWhateverTheClientSends(): void
+    {
+        $doc = $this->doc() + ['structureVersion' => '42.0.0'];
+        $stored = $this->repository->save(null, $doc, 'api');
+
+        self::assertSame('1.0.0', $stored->data['structureVersion']);
+    }
+
+    public function testAnAdapterWriteBackDoesNotIncrementTheVersion(): void
+    {
+        $stored = $this->repository->save(null, $this->doc('first'), 'api');
+        $linked = $this->repository->save($stored->id, $this->doc('first') + ['dependenciesPageLink' => 'https://x/p/1'], 'confluence', 1);
+
+        self::assertSame('1.0.0', $linked->data['version']);
+    }
+
+    public function testRestoreIncrementsTheVersionFromTheCurrentOne(): void
+    {
+        $stored = $this->repository->save(null, $this->doc('first'), 'api');
+        $this->repository->save($stored->id, $this->doc('second'), 'api', 1);
+
+        $restored = $this->repository->restore($stored->id, 1);
+
+        self::assertSame('first', $restored->data['epics'][0]['what']);
+        self::assertSame('1.0.2', $restored->data['version'], 'the restored content is a new edit of the current document');
     }
 
     public function testMalformedIdIsRejectedBeforeAnyPathIsBuilt(): void

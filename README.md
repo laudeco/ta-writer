@@ -95,6 +95,13 @@ collision gets a suffix (`ta-writer-2`).
 
 Versions are never rewritten. A restore creates a new version whose origin is `restore`.
 
+**Document versions.** Two fields are set by the server, never by a client:
+- `structureVersion` is the `info.version` of the OpenAPI file. The file is read-only on disk (`chmod 444`), and the
+  form shows it read-only.
+- `version` is the version of the content: `1.0.0` at creation, then the patch number goes up (`1.0.1`, `1.0.2`…) at
+  each edit that changes the content, whether it comes from the UI, the API or a restore. A save that changes nothing
+  keeps the version. An adapter writing back its ticket keys and page links does not count as an edit.
+
 ## REST API
 
 | Method | Path | Purpose |

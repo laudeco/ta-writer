@@ -14,6 +14,7 @@ Technical analyses (TA) are written as Markdown by the `technical-analysis-write
 - **Dev serving**: `php -S` in the PHP container on `127.0.0.1:8080`; noVNC on `127.0.0.1:6080` for the AGIR login. No nginx, no MongoDB.
 - **Document ids** are `<YYYYMMDD>_<slug>`; the slug comes from the project reference alone, collisions get `-2`, `-3`.
 - **AGIR epic and technical-story pages** start from the reference pages of the AGIR skill (`3398621794`, `3399544715`), whose details cells are replaced by label. Reading the CFDITS templates directly (storage body) is not implemented: the reference pages are the proven source; the template ids are kept as documentation.
+- **Read-only structure and document version** (2026-11-23): `structureVersion` is set by the server from `info.version` of the OpenAPI file, and both `version` and `structureVersion` are `readOnly` in the schema and in the form. `version` starts at `1.0.0` and its patch number goes up at each edit that changes the content (UI, API, restore); adapter write-backs do not count as edits. The schema file is `chmod 444`.
 - **Writes are batched**: Confluence and AGIR runs write their links back into the JSON in one new version at the end, even when the run stopped halfway; pages already written keep their link.
 
 ## Scope

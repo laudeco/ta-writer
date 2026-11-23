@@ -23,6 +23,7 @@ final class FieldNode
         public readonly array $options = [],
         public readonly array $children = [],
         public readonly ?FieldNode $item = null,
+        public readonly bool $readOnly = false,
     ) {
     }
 
