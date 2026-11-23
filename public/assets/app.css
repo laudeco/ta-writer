@@ -441,3 +441,20 @@ button.add { max-width: 100%; white-space: normal; text-align: left; }
 .preview-diagram.is-pending { min-height: 56px; display: flex; align-items: center; justify-content: center; }
 
 .diagram-thumb:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---------- collapsing blocks ---------- */
+.doc-nav-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+.doc-nav-tools { display: inline-flex; gap: 2px; }
+.doc-nav-tools button { padding: 2px 6px; font-size: 11.5px; }
+.collapse-toggle { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 12px; line-height: 1; cursor: pointer; }
+.collapse-toggle:hover { background: var(--surface-3); color: var(--text); }
+.collapse-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.collapse-toggle::before { content: '\25BE'; display: inline-block; transition: transform .15s ease; }
+.is-collapsed > .item-bar > .collapse-toggle::before, .collection.is-collapsed > .collection-head > .collapse-toggle::before, fieldset.object.is-collapsed > legend > .collapse-toggle::before { transform: rotate(-90deg); }
+.collection-head .collapse-toggle { margin-left: auto; }
+fieldset.object > legend > .collapse-toggle { margin-right: 4px; vertical-align: middle; }
+.item-summary { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item:not(.is-collapsed) > .item-bar > .item-summary { display: none; }
+.item.is-collapsed { padding-bottom: 6px; }
+.item.is-collapsed > .item-bar { margin-bottom: 0; }
+.item.is-collapsed > :not(.item-bar), .collection.is-collapsed > :not(.collection-head), fieldset.object.is-collapsed > :not(legend) { display: none !important; }

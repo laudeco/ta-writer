@@ -206,6 +206,9 @@
             var target = document.getElementById(a.getAttribute('data-nav-target'));
             if (target) {
                 var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (window.TACollapse) {
+                    window.TACollapse.expandTo(target); // a collapsed block would hide the place it jumps to
+                }
                 target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
                 markActive(target.id);
             }

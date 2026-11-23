@@ -38,6 +38,10 @@
             if (window.TADiagram) {
                 window.TADiagram.initIn(item);
             }
+            if (window.TACollapse) {
+                window.TACollapse.initIn(item);
+                window.TACollapse.expandTo(item); // the new block is shown, with the blocks around it
+            }
             renumber(collection.querySelector(':scope > [data-items]'));
             refreshCount(collection);
             var firstField = item.querySelector('input, textarea, select');

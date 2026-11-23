@@ -7,6 +7,7 @@
 <script src="/assets/diagram.js" defer></script>
 <script src="/assets/docnav.js" defer></script>
 <script src="/assets/preview.js" defer></script>
+<script src="/assets/collapse.js" defer></script>
 {% endblock %}
 {% block body %}
 <div class="doc-head">
@@ -42,7 +43,7 @@
 
 <div class="editor-layout">
 <nav class="doc-nav" aria-label="Outline" data-docnav>
-    <div class="doc-nav-head">Outline</div>
+    <div class="doc-nav-head"><span>Outline</span><span class="doc-nav-tools"><button type="button" class="ghost small" data-collapse-all title="Collapse every block">Collapse all</button><button type="button" class="ghost small" data-expand-all title="Expand every block">Expand all</button></span></div>
     <input type="search" class="doc-nav-filter" placeholder="Filter (/)" aria-label="Filter the outline" data-docnav-filter>
     <div class="doc-nav-list" data-docnav-list></div>
 </nav>
