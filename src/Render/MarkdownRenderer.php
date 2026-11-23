@@ -4,198 +4,200 @@ declare(strict_types=1);
 
 namespace App\Render;
 
-use App\Reference\ReferenceResolver;
-
 /**
- * Renders a document as one Markdown file: one section per epic, technical story and subtask, titles carrying their
- * reference, and a Dependencies section at the end whose entries link to the stored `pageLink`s.
+ * Markdown rendering of the document model. Same layout as the PDF: cover, table of contents, epics with their
+ * stories, then the calculated sections (criteria coverage, SQL impact, dependencies).
  */
 final class MarkdownRenderer
 {
-    public function __construct(private readonly ReferenceResolver $references)
+    public function __construct(private readonly ContentConverter $converter)
     {
     }
 
     /**
-     * @param array<string, mixed> $document
+     * @param array<string, mixed> $model from DocumentModelBuilder::build()
      */
-    public function render(array $document): string
+    public function render(array $model): string
     {
+        $format = $model['format'];
         $out = [];
-        $project = $document['project'] ?? [];
-        $out[] = sprintf('# %s', $project['name'] ?? 'Technical analysis');
+
+        $project = $model['project'];
+        $author = $model['author'];
+        $out[] = '# '.($project['name'] ?? 'Technical analysis');
         $out[] = '';
-        $out[] = sprintf('- Project: %s', $project['reference'] ?? '-');
-        if (isset($project['link'])) {
-            $out[] = sprintf('- Project link: %s', $project['link']);
-        }
-        $author = $document['author'] ?? [];
-        $out[] = sprintf('- Author: %s%s', $author['name'] ?? '-', isset($author['email']) ? sprintf(' <%s>', $author['email']) : '');
-        $out[] = sprintf('- Version: %s (structure %s)', $document['version'] ?? '-', $document['structureVersion'] ?? '-');
+        $out[] = '- Project: '.($project['reference'] ?? '-').(isset($project['link']) ? ' ('.$project['link'].')' : '');
+        $out[] = '- Author: '.($author['name'] ?? '-').(isset($author['email']) ? ' <'.$author['email'].'>' : '');
+        $out[] = '- Version: '.($model['version'] ?: '-').' (structure '.($model['structureVersion'] ?: '-').')';
         $out[] = '';
 
-        foreach ($document['epics'] ?? [] as $e => $epic) {
-            $out[] = '';
-            $out[] = sprintf('## %s', $this->references->title($this->references->epic($document, $e), (string) $epic['title']));
-            $out[] = '';
-            $this->block($out, $document['format'] ?? 'markdown', $epic['what'] ?? '');
-            $this->resources($out, $epic);
-            $this->diagrams($out, $epic['diagrams'] ?? []);
-
-            foreach ($epic['userStories'] ?? [] as $u => $us) {
-                $out[] = '';
-                $out[] = sprintf('### %s', $this->references->title($this->references->userStory($document, $e, $u), (string) $us['title']));
-                $out[] = '';
-                foreach ($us['acceptanceCriteria'] ?? [] as $ac) {
-                    $out[] = sprintf('- %s', $ac);
+        $out[] = '## Contents';
+        $out[] = '';
+        foreach ($model['epics'] as $epic) {
+            $out[] = sprintf('- [%s](#%s)', $epic['displayTitle'], $this->anchor($epic['displayTitle']));
+            foreach ($epic['technicalStories'] as $ts) {
+                $out[] = sprintf('  - [%s](#%s)', $ts['displayTitle'], $this->anchor($ts['displayTitle']));
+                foreach ($ts['subtasks'] as $sub) {
+                    $out[] = sprintf('    - [%s](#%s)', $sub['displayTitle'], $this->anchor($sub['displayTitle']));
                 }
-                $this->resources($out, $us);
-                $this->diagrams($out, $us['diagrams'] ?? []);
+            }
+        }
+        $out[] = '';
+
+        foreach ($model['epics'] as $epic) {
+            $out[] = '';
+            $out[] = sprintf('## %s', $epic['displayTitle']);
+            $out[] = '';
+            $this->text($out, $format, $epic['what'], 'Context');
+            $this->resources($out, $epic['resources']);
+            $this->diagrams($out, $epic['diagrams']);
+
+            foreach ($epic['userStories'] as $us) {
+                $out[] = '';
+                $out[] = sprintf('### %s', $us['displayTitle']);
+                $out[] = '';
+                foreach ($us['acceptanceCriteria'] as $ac) {
+                    $out[] = '- '.$ac;
+                }
+                $out[] = '';
+                $this->resources($out, $us['resources']);
+                $this->diagrams($out, $us['diagrams']);
             }
 
-            foreach ($epic['technicalStories'] ?? [] as $t => $ts) {
+            foreach ($epic['technicalStories'] as $ts) {
                 $out[] = '';
-                $out[] = sprintf('### %s', $this->references->title($this->references->technicalStory($document, $e, $t), (string) $ts['title']));
+                $out[] = sprintf('### %s', $ts['displayTitle']);
                 $out[] = '';
-                $this->block($out, $document['format'] ?? 'markdown', $ts['what'] ?? '', 'What');
-                $this->block($out, $document['format'] ?? 'markdown', $ts['why'] ?? '', 'Why');
-                if (($ts['acceptanceCriteriaCovered'] ?? []) !== []) {
+                $this->text($out, $format, $ts['what'], 'What');
+                $this->text($out, $format, $ts['why'], 'Why');
+                if ($ts['acceptanceCriteriaCovered'] !== []) {
                     $out[] = '**Acceptance criteria covered**';
                     foreach ($ts['acceptanceCriteriaCovered'] as $ac) {
-                        $out[] = sprintf('- %s', $ac);
+                        $out[] = '- '.$ac;
                     }
                     $out[] = '';
                 }
-                $this->resources($out, $ts);
-                $this->diagrams($out, $ts['diagrams'] ?? []);
+                $this->resources($out, $ts['resources']);
+                $this->diagrams($out, $ts['diagrams']);
 
-                foreach ($ts['subtasks'] ?? [] as $s => $sub) {
+                foreach ($ts['subtasks'] as $sub) {
                     $out[] = '';
-                    $out[] = sprintf('#### %s', $this->references->title($this->references->subtask($document, $e, $t, $s), (string) $sub['title']));
+                    $out[] = sprintf('#### %s', $sub['displayTitle']);
                     $out[] = '';
-                    if (isset($sub['featureToggle'])) {
+                    if ($sub['featureToggle'] !== null) {
                         $out[] = sprintf('- Feature toggle: `%s`', $sub['featureToggle']);
                     }
-                    if (isset($sub['sqlImpact'])) {
+                    if ($sub['sqlImpact'] !== null) {
                         $out[] = sprintf('- SQL impact: %d column(s), %d row(s)', $sub['sqlImpact']['nbColumns'], $sub['sqlImpact']['nbRows']);
                     }
-                    if (isset($sub['criterion'])) {
+                    if ($sub['criterion'] !== null) {
                         $out[] = sprintf('- Criterion: %s', $sub['criterion']);
                     }
                     $out[] = '';
-                    foreach (['what' => 'What', 'why' => 'Why', 'where' => 'Where', 'how' => 'How'] as $key => $label) {
-                        $this->block($out, $document['format'] ?? 'markdown', $sub[$key] ?? '', $label);
-                    }
-                    $this->diagrams($out, $sub['diagrams'] ?? []);
+                    $this->text($out, $format, $sub['what'], 'What');
+                    $this->text($out, $format, $sub['why'], 'Why');
+                    $this->text($out, $format, $sub['where'], 'Where');
+                    $this->text($out, $format, $sub['how'], 'How');
+                    $this->resources($out, $sub['resources']);
+                    $this->diagrams($out, $sub['diagrams']);
                 }
             }
         }
 
         $out[] = '';
+        $out[] = '## Acceptance criteria coverage';
+        $out[] = '';
+        if ($model['acCoverage'] === []) {
+            $out[] = '_No acceptance criteria._';
+        } else {
+            $out[] = '| Criterion | Covered by |';
+            $out[] = '|---|---|';
+            foreach ($model['acCoverage'] as $row) {
+                $by = $row['coveredBy'] === [] ? '**not covered**' : implode('<br>', array_map(fn (string $t): string => $this->escapeCell($t), $row['coveredBy']));
+                $out[] = sprintf('| %s%s | %s |', $this->escapeCell($row['criterion']), $row['declared'] ? '' : ' _(not declared)_', $by);
+            }
+        }
+        $out[] = '';
+
+        $out[] = '## SQL impact';
+        $out[] = '';
+        $out[] = '| Technical story | Columns | Rows |';
+        $out[] = '|---|---|---|';
+        foreach ($model['sqlImpact']['rows'] as $row) {
+            $out[] = $row['sqlImpact'] === null
+                ? sprintf('| %s | — | — |', $this->escapeCell($row['title']))
+                : sprintf('| %s | %d | %d |', $this->escapeCell($row['title']), $row['sqlImpact']['nbColumns'], $row['sqlImpact']['nbRows']);
+        }
+        $out[] = sprintf('| **Total** | **%d** | **%d** |', $model['sqlImpact']['total']['nbColumns'], $model['sqlImpact']['total']['nbRows']);
+        $out[] = '';
+        $out[] = '_Only migrations are counted; rows written at runtime by the code are not._';
+        $out[] = '';
+
         $out[] = '## Dependencies';
         $out[] = '';
-        $out = array_merge($out, $this->dependencyLines($document));
+        if ($model['dependencies'] === []) {
+            $out[] = '_No dependency._';
+        }
+        foreach ($model['dependencies'] as $dep) {
+            $out[] = sprintf('- %s is blocked by %s', $this->link($dep['toTitle'], $dep['toLink']), $this->link($dep['fromTitle'], $dep['fromLink']));
+        }
+        $out[] = '';
 
-        return implode("\n", $out)."\n";
+        return implode("\n", $out);
     }
 
     /**
-     * @param array<string, mixed> $document
-     *
-     * @return list<string>
+     * GitHub-style anchor of a heading.
      */
-    public function dependencyLines(array $document): array
+    public function anchor(string $heading): string
     {
-        $index = $this->index($document);
-        $lines = [];
-        foreach ($document['dependencies'] ?? [] as $dep) {
-            $lines[] = sprintf('- %s is blocked by %s', $this->link($index, $dep['to']), $this->link($index, $dep['from']));
-        }
-        if ($lines === []) {
-            $lines[] = '_No dependency._';
-        }
+        $slug = strtolower(trim((string) preg_replace('/[^\p{L}\p{N}\s-]/u', '', $heading)));
 
-        return $lines;
+        return (string) preg_replace('/\s+/', '-', $slug);
     }
 
-    /**
-     * Display title and stored page link per reference (epics, user stories, technical stories).
-     *
-     * @param array<string, mixed> $document
-     *
-     * @return array<string, array{title: string, pageLink: ?string}>
-     */
-    public function index(array $document): array
+    private function link(string $title, ?string $pageLink): string
     {
-        $index = [];
-        foreach ($document['epics'] ?? [] as $e => $epic) {
-            $index[$epic['reference'] ?? ''] ??= ['title' => $this->references->title($this->references->epic($document, $e), (string) $epic['title']), 'pageLink' => $epic['pageLink'] ?? null];
-            foreach ($epic['userStories'] ?? [] as $u => $us) {
-                $index[$us['reference'] ?? ''] ??= ['title' => $this->references->title($this->references->userStory($document, $e, $u), (string) $us['title']), 'pageLink' => $us['pageLink'] ?? null];
-            }
-            foreach ($epic['technicalStories'] ?? [] as $t => $ts) {
-                $index[$ts['reference'] ?? ''] ??= ['title' => $this->references->title($this->references->technicalStory($document, $e, $t), (string) $ts['title']), 'pageLink' => $ts['pageLink'] ?? null];
-            }
-        }
-
-        return $index;
+        return $pageLink !== null && $pageLink !== '' ? sprintf('[%s](%s)', $title, $pageLink) : $title;
     }
 
-    /**
-     * @param array<string, array{title: string, pageLink: ?string}> $index
-     */
-    private function link(array $index, string $reference): string
+    private function escapeCell(string $text): string
     {
-        $node = $index[$reference] ?? null;
-        if ($node === null) {
-            return sprintf('`%s`', $reference);
-        }
-
-        return $node['pageLink'] !== null && $node['pageLink'] !== ''
-            ? sprintf('[%s](%s)', $node['title'], $node['pageLink'])
-            : $node['title'];
+        return str_replace('|', '\\|', $text);
     }
 
     /**
      * @param list<string> $out
      */
-    private function block(array &$out, string $format, string $content, ?string $heading = null): void
+    private function text(array &$out, string $format, string $content, string $heading): void
     {
         if (trim($content) === '') {
             return;
         }
-        if ($heading !== null) {
-            $out[] = sprintf('**%s**', $heading);
-            $out[] = '';
-        }
-        $out[] = $this->text($format, $content);
+        $out[] = sprintf('**%s**', $heading);
+        $out[] = '';
+        $out[] = $this->converter->toMarkdown($content, $format);
         $out[] = '';
     }
 
-    private function text(string $format, string $content): string
-    {
-        // html is only stripped for now; a real html-to-markdown conversion comes with the PDF adapter
-        return $format === 'html' ? trim(strip_tags($content)) : trim($content);
-    }
-
     /**
-     * @param list<string> $out
-     * @param array<string, mixed> $node
+     * @param list<string>                  $out
+     * @param list<array{type: string, content: string}> $resources
      */
-    private function resources(array &$out, array $node): void
+    private function resources(array &$out, array $resources): void
     {
-        if (($node['resources'] ?? []) === []) {
+        if ($resources === []) {
             return;
         }
         $out[] = '**Resources**';
-        foreach ($node['resources'] as $resource) {
+        foreach ($resources as $resource) {
             $out[] = sprintf('- (%s) %s', $resource['type'], $resource['content']);
         }
         $out[] = '';
     }
 
     /**
-     * @param list<string> $out
+     * @param list<string>                       $out
      * @param list<array{type: string, content: string}> $diagrams
      */
     private function diagrams(array &$out, array $diagrams): void

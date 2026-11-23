@@ -1,0 +1,104 @@
+{# PDF body. Same content as the Markdown export, with page breaks before every epic and technical story. #}
+<div class="cover">
+    <p class="eyebrow">Technical analysis</p>
+    <h1 class="cover-title">{{ doc.project.name|default('Technical analysis') }}</h1>
+    <table class="cover-table">
+        <tr><th>Project</th><td>{{ doc.project.reference|default('-') }}{% if doc.project.link is defined %} &middot; <a href="{{ doc.project.link }}">{{ doc.project.link }}</a>{% endif %}</td></tr>
+        <tr><th>Author</th><td>{{ doc.author.name|default('-') }}{% if doc.author.email is defined %} &middot; {{ doc.author.email }}{% endif %}</td></tr>
+        <tr><th>Version</th><td>{{ doc.version|default('-') }} <span class="muted">(structure {{ doc.structureVersion|default('-') }})</span></td></tr>
+        <tr><th>Generated</th><td>{{ "now"|date("Y-m-d H:i") }}</td></tr>
+    </table>
+</div>
+
+<tocpagebreak />
+
+{% for epic in doc.epics %}
+    {% if not loop.first %}<pagebreak />{% endif %}
+    <h2 class="level-epic">{{ epic.displayTitle }}</h2>
+    {% if epic.what is not empty %}<h5>Context</h5><div class="text">{{ epic.what|content_html(doc.format) }}</div>{% endif %}
+    {% include 'export/_resources.html.twig' with { resources: epic.resources } only %}
+    {% for diagram in epic.diagrams %}<div class="diagram-block">{{ mermaid_img(diagram.content) }}</div>{% endfor %}
+
+    {% for us in epic.userStories %}
+        <h3 class="level-story">{{ us.displayTitle }}</h3>
+        <ul>{% for ac in us.acceptanceCriteria %}<li>{{ ac }}</li>{% endfor %}</ul>
+        {% include 'export/_resources.html.twig' with { resources: us.resources } only %}
+        {% for diagram in us.diagrams %}<div class="diagram-block">{{ mermaid_img(diagram.content) }}</div>{% endfor %}
+    {% endfor %}
+
+    {% for ts in epic.technicalStories %}
+        <pagebreak />
+        <h3 class="level-ts">{{ ts.displayTitle }}</h3>
+        {% if ts.what is not empty %}<h5>What</h5><div class="text">{{ ts.what|content_html(doc.format) }}</div>{% endif %}
+        {% if ts.why is not empty %}<h5>Why</h5><div class="text">{{ ts.why|content_html(doc.format) }}</div>{% endif %}
+        {% if ts.acceptanceCriteriaCovered is not empty %}
+            <h5>Acceptance criteria covered</h5>
+            <ul>{% for ac in ts.acceptanceCriteriaCovered %}<li>{{ ac }}</li>{% endfor %}</ul>
+        {% endif %}
+        {% include 'export/_resources.html.twig' with { resources: ts.resources } only %}
+        {% for diagram in ts.diagrams %}<div class="diagram-block">{{ mermaid_img(diagram.content) }}</div>{% endfor %}
+
+        {% for sub in ts.subtasks %}
+            <h4 class="level-subtask">{{ sub.displayTitle }}</h4>
+            <table class="meta">
+                {% if sub.featureToggle is not null %}<tr><th>Feature toggle</th><td><code>{{ sub.featureToggle }}</code></td></tr>{% endif %}
+                {% if sub.sqlImpact is not null %}<tr><th>SQL impact</th><td>{{ sub.sqlImpact.nbColumns }} column(s), {{ sub.sqlImpact.nbRows }} row(s)</td></tr>{% endif %}
+                {% if sub.criterion is not null %}<tr><th>Criterion</th><td>{{ sub.criterion }}</td></tr>{% endif %}
+            </table>
+            {% if sub.what is not empty %}<h5>What</h5><div class="text">{{ sub.what|content_html(doc.format) }}</div>{% endif %}
+            {% if sub.why is not empty %}<h5>Why</h5><div class="text">{{ sub.why|content_html(doc.format) }}</div>{% endif %}
+            {% if sub.where is not empty %}<h5>Where</h5><div class="text">{{ sub.where|content_html(doc.format) }}</div>{% endif %}
+            {% if sub.how is not empty %}<h5>How</h5><div class="text">{{ sub.how|content_html(doc.format) }}</div>{% endif %}
+            {% include 'export/_resources.html.twig' with { resources: sub.resources } only %}
+            {% for diagram in sub.diagrams %}<div class="diagram-block">{{ mermaid_img(diagram.content) }}</div>{% endfor %}
+        {% endfor %}
+    {% endfor %}
+{% endfor %}
+
+<pagebreak />
+<h2>Acceptance criteria coverage</h2>
+{% if doc.acCoverage is empty %}
+    <p class="muted">No acceptance criteria.</p>
+{% else %}
+    <table class="grid">
+        <thead><tr><th>Criterion</th><th>Covered by</th></tr></thead>
+        <tbody>
+        {% for row in doc.acCoverage %}
+            <tr>
+                <td>{{ row.criterion }}{% if not row.declared %} <span class="muted">(not declared)</span>{% endif %}</td>
+                <td>{% for by in row.coveredBy %}{{ by }}{% if not loop.last %}<br>{% endif %}{% else %}<strong>not covered</strong>{% endfor %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+<h2>SQL impact</h2>
+<table class="grid">
+    <thead><tr><th>Technical story</th><th>Columns</th><th>Rows</th></tr></thead>
+    <tbody>
+    {% for row in doc.sqlImpact.rows %}
+        <tr><td>{{ row.title }}</td>
+            {% if row.sqlImpact is null %}<td>&mdash;</td><td>&mdash;</td>{% else %}<td>{{ row.sqlImpact.nbColumns }}</td><td>{{ row.sqlImpact.nbRows }}</td>{% endif %}
+        </tr>
+    {% endfor %}
+    <tr class="total"><td>Total</td><td>{{ doc.sqlImpact.total.nbColumns }}</td><td>{{ doc.sqlImpact.total.nbRows }}</td></tr>
+    </tbody>
+</table>
+<p class="muted">Only migrations are counted; rows written at runtime by the code are not.</p>
+
+<pagebreak />
+<h2>Dependencies</h2>
+{% if doc.dependencies is empty %}
+    <p class="muted">No dependency.</p>
+{% else %}
+    <ul class="dependencies">
+    {% for dep in doc.dependencies %}
+        <li>
+            {% if dep.toLink is not null %}<a href="{{ dep.toLink }}">{{ dep.toTitle }}</a>{% else %}{{ dep.toTitle }}{% endif %}
+            is blocked by
+            {% if dep.fromLink is not null %}<a href="{{ dep.fromLink }}">{{ dep.fromTitle }}</a>{% else %}{{ dep.fromTitle }}{% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+{% endif %}

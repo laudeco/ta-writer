@@ -9,12 +9,14 @@ use App\Publication\OptionDefinition;
 use App\Publication\PublisherInterface;
 use App\Publication\PublishRequest;
 use App\Publication\PublishResult;
+use App\Render\DocumentModelBuilder;
 use App\Render\MarkdownRenderer;
 use App\Storage\AtomicFileWriter;
 
 final class MarkdownPublisher implements PublisherInterface
 {
     public function __construct(
+        private readonly DocumentModelBuilder $builder,
         private readonly MarkdownRenderer $renderer,
         private readonly AtomicFileWriter $writer,
         private readonly string $exportDir,
@@ -43,7 +45,7 @@ final class MarkdownPublisher implements PublisherInterface
             return new PublishResult('dry-run', ["would write $output"], [$output]);
         }
 
-        $this->writer->write($output, $this->renderer->render($request->document));
+        $this->writer->write($output, $this->renderer->render($this->builder->build($request->document)));
 
         return new PublishResult('done', ["wrote $output"], [$output]);
     }

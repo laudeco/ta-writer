@@ -1,0 +1,32 @@
+/* Single theme for the PDF export. Change the colours here only. */
+body { font-family: dejavusans, sans-serif; font-size: 10pt; color: #1f2933; line-height: 1.45; }
+h1, h2, h3, h4, h5 { font-family: dejavusans, sans-serif; color: #102a43; }
+h2.level-epic { font-size: 19pt; border-bottom: 2px solid #334e68; padding-bottom: 4px; margin-top: 0; }
+h3.level-story { font-size: 13pt; color: #334e68; margin-top: 14px; }
+h3.level-ts { font-size: 14pt; color: #102a43; margin-top: 4px; }
+h4.level-subtask { font-size: 11pt; color: #334e68; border-left: 3px solid #627d98; padding-left: 6px; margin-top: 14px; }
+h4, h5 { color: #486581; margin-bottom: 2px; }
+.cover { padding-top: 90px; }
+.eyebrow { text-transform: uppercase; letter-spacing: 2px; color: #627d98; font-size: 9pt; }
+.cover-title { font-size: 30pt; margin: 6px 0 24px 0; }
+.cover-table th { text-align: left; color: #627d98; width: 110px; padding: 4px 8px 4px 0; }
+.cover-table td { padding: 4px 0; }
+.muted { color: #829ab1; }
+.text p { margin: 3px 0 6px 0; }
+code { font-family: dejavusansmono, monospace; background: #f0f4f8; padding: 0 3px; font-size: 9pt; }
+pre { font-family: dejavusansmono, monospace; background: #f0f4f8; padding: 8px; font-size: 8pt; white-space: pre-wrap; }
+table.grid { border-collapse: collapse; width: 100%; margin: 6px 0 12px 0; }
+table.grid th { background: #102a43; color: #fff; text-align: left; padding: 5px; font-size: 9pt; }
+table.grid td { border-bottom: 1px solid #d9e2ec; padding: 5px; vertical-align: top; }
+table.grid tr.total td { font-weight: bold; background: #f0f4f8; }
+table.meta { border-collapse: collapse; margin: 4px 0; font-size: 9pt; }
+table.meta th { text-align: left; color: #627d98; padding: 2px 12px 2px 0; }
+table.meta td { padding: 2px 0; }
+.resources { background: #f0f4f8; padding: 6px 10px; margin: 6px 0; border-left: 3px solid #9fb3c8; }
+.resources ul { margin: 2px 0 0 0; padding-left: 14px; }
+.tag { font-size: 7.5pt; text-transform: uppercase; color: #486581; background: #d9e2ec; padding: 0 4px; margin-right: 4px; }
+.diagram-block { margin: 8px 0; text-align: center; }
+img.diagram { max-width: 100%; max-height: 520px; }
+p.warning { color: #9b1c1c; font-size: 9pt; }
+ul.dependencies li { margin-bottom: 4px; }
+a { color: #1d4ed8; text-decoration: none; }
