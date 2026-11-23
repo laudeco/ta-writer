@@ -1,10 +1,17 @@
-// Live preview of the section in view (or the whole document), on the right of the editor. The server renders it with the
-// Markdown renderer of the export; diagrams are drawn here with Mermaid, and a click opens them in the diagram modal.
+// Live preview of the section in view (or the whole document), on the right of the editor. The server renders the
+// document with the Markdown renderer of the export. Its diagrams are images rendered by the server in the background:
+// they arrive one by one, two at a time, and never hold up the editing. A click opens a diagram in the diagram modal.
 (function () {
     'use strict';
 
     var NAVIGABLE = { epics: true, technicalStories: true, userStories: true, subtasks: true };
+    var PARALLEL = 2;
     var root, body, status, form, mode = 'section', timer = null, controller = null, lastPath = null;
+    var images = new Map(); // diagram source -> object URL of its PNG, kept for the page
+    var pending = new Map(); // diagram source -> request in flight
+    var queue = [];
+    var running = 0;
+    var requestId = 0; // only the answer to the latest request is shown
 
     // "epics.0.technicalStories.2": the kind and the position of each item from the top of the document
     function pathOf(el) {
@@ -39,32 +46,99 @@
         return el ? pathOf(el) : 'header';
     }
 
-    function renderDiagrams() {
-        if (!window.TADiagram) {
-            return;
-        }
-        body.querySelectorAll('pre > code.language-mermaid').forEach(function (code) {
-            var source = code.textContent;
-            var figure = document.createElement('figure');
-            figure.className = 'preview-diagram';
-            figure.innerHTML = '<span class="muted">Diagram…</span>';
-            code.parentElement.replaceWith(figure);
-            window.TADiagram.render(source).then(function (svg) {
-                figure.innerHTML = svg;
-                figure.title = 'Click to view the diagram';
-                figure.addEventListener('click', function () { window.TADiagram.show(source); });
-            }, function () {
-                figure.innerHTML = '<span class="diagram-error">Invalid diagram</span><pre></pre>';
-                figure.querySelector('pre').textContent = source;
-            });
-        });
-    }
-
     function setStatus(text) {
         if (status) {
             status.textContent = text;
         }
     }
+
+    // ---------- diagrams: images from the server, in the background ----------
+
+    function loadImage(source) {
+        if (images.has(source)) {
+            return Promise.resolve(images.get(source));
+        }
+        // the same diagram twice in the document is rendered once: two renderings of one source would clash on the server
+        if (pending.has(source)) {
+            return pending.get(source);
+        }
+        var data = new FormData();
+        data.set('source', source);
+
+        var request = fetch('/editor/preview/diagram', { method: 'POST', body: data }).then(function (response) {
+            if (!response.ok) {
+                return response.text().then(function (message) { throw new Error(message || 'HTTP ' + response.status); });
+            }
+
+            return response.blob();
+        }).then(function (blob) {
+            var url = URL.createObjectURL(blob);
+            images.set(source, url);
+            pending.delete(source);
+
+            return url;
+        }, function (error) {
+            pending.delete(source);
+            throw error;
+        });
+        pending.set(source, request);
+
+        return request;
+    }
+
+    // one diagram: its image is shown in its own figure (the job is a parameter, not a shared variable)
+    function showDiagram(job) {
+        return loadImage(job.source).then(function (url) {
+            if (job.figure.isConnected) {
+                var img = new Image();
+                img.alt = 'Diagram';
+                img.src = url;
+                job.figure.classList.remove('is-pending');
+                job.figure.replaceChildren(img);
+                job.figure.title = 'Click to view the diagram';
+                job.figure.addEventListener('click', function () { window.TADiagram.show(job.source); });
+            }
+        }, function (error) {
+            if (job.figure.isConnected) {
+                job.figure.classList.remove('is-pending');
+                job.figure.classList.add('is-error');
+                var label = document.createElement('span');
+                label.className = 'diagram-error';
+                label.textContent = 'Diagram unavailable: ' + String(error && error.message ? error.message : error).split('\n')[0];
+                job.figure.replaceChildren(label);
+                job.figure.title = 'Click to see the source';
+                job.figure.addEventListener('click', function () { window.TADiagram.show(job.source); });
+            }
+        });
+    }
+
+    function pump() {
+        while (running < PARALLEL && queue.length > 0) {
+            var next = queue.shift();
+            if (!next.figure.isConnected) {
+                continue; // the preview was replaced meanwhile
+            }
+            running += 1;
+            showDiagram(next).then(function () {
+                running -= 1;
+                pump();
+            });
+        }
+    }
+
+    // the queue is rebuilt from what is shown: the diagrams still pending in the preview, in document order
+    function queueDiagrams() {
+        queue.length = 0;
+        body.querySelectorAll('figure.is-pending').forEach(function (figure) {
+            var code = figure.querySelector('code.language-mermaid');
+            if (code) {
+                queue.push({ figure: figure, source: code.textContent });
+            }
+        });
+        pump();
+    }
+
+    // ---------- updates ----------
 
     function update() {
         clearTimeout(timer);
@@ -72,6 +146,7 @@
         if (controller) {
             controller.abort();
         }
+        var id = ++requestId;
         controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
         var data = new FormData(form);
         data.set('path', path);
@@ -88,16 +163,18 @@
 
             return response.text();
         }).then(function (html) {
+            if (id !== requestId) {
+                return; // a newer preview was asked for meanwhile
+            }
             if (path !== lastPath) {
                 body.scrollTop = 0;
             }
             lastPath = path;
             body.innerHTML = html;
-            renderDiagrams();
-            var now = new Date();
-            setStatus('updated ' + now.toTimeString().slice(0, 8));
+            setStatus('updated ' + new Date().toTimeString().slice(0, 8));
+            queueDiagrams();
         }).catch(function (error) {
-            if (error && error.name === 'AbortError') {
+            if (id !== requestId || (error && error.name === 'AbortError')) {
                 return;
             }
             setStatus('preview unavailable');

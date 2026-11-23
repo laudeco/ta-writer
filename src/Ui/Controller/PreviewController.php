@@ -7,9 +7,13 @@ namespace App\Ui\Controller;
 use App\Render\ContentConverter;
 use App\Render\DocumentModelBuilder;
 use App\Render\MarkdownRenderer;
+use App\Render\Mermaid\MermaidRenderException;
+use App\Render\Mermaid\MermaidRenderer;
 use App\Ui\Form\FormDataNormalizer;
 use App\Ui\Form\SchemaFormBuilder;
+use App\Ui\Preview\PreviewDiagrams;
 use App\Ui\Preview\SectionScope;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +31,7 @@ final class PreviewController extends AbstractController
         private readonly DocumentModelBuilder $builder,
         private readonly MarkdownRenderer $renderer,
         private readonly ContentConverter $converter,
+        private readonly MermaidRenderer $mermaid,
     ) {
     }
 
@@ -51,9 +56,30 @@ final class PreviewController extends AbstractController
         if (!in_array($path, ['document', 'header'], true)) {
             $markdown = $this->withoutHeader($markdown);
         }
-        $html = $this->converter->toHtml($markdown, 'markdown');
+        $html = PreviewDiagrams::placeholders($this->converter->toHtml($markdown, 'markdown'));
 
         return new Response($html, Response::HTTP_OK, ['Content-Type' => 'text/html; charset=UTF-8', 'Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * One diagram of the preview, as a PNG rendered by mmdc (cached by the hash of its source). Called by the browser for
+     * each placeholder, in the background: a slow rendering delays that one image only.
+     */
+    #[Route('/editor/preview/diagram', name: 'ui_preview_diagram', methods: ['POST'])]
+    public function diagram(Request $request): Response
+    {
+        $source = (string) $request->request->get('source', '');
+        if (trim($source) === '') {
+            return new Response('The diagram is empty.', Response::HTTP_UNPROCESSABLE_ENTITY, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        try {
+            $png = $this->mermaid->render($source);
+        } catch (MermaidRenderException $e) {
+            return new Response($e->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        return new BinaryFileResponse($png, Response::HTTP_OK, ['Content-Type' => 'image/png', 'Cache-Control' => 'private, max-age=3600']);
     }
 
     /**

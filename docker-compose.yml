@@ -7,6 +7,8 @@ services:
         environment:
             COMPOSER_HOME: /tmp/composer
             HOME: /tmp
+            # the preview renders its diagrams while the editor keeps answering: the built-in server needs several workers
+            PHP_CLI_SERVER_WORKERS: 4
         volumes:
             - .:/app
         ports:
