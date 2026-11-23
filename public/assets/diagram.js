@@ -430,15 +430,38 @@
         close();
     }
 
-    document.addEventListener('click', function (event) {
-        var button = event.target.closest('[data-diagram-open]');
-        if (!button) {
+    // the thumbnail opens the diagram in view mode (edit when it is still empty, so it can be written)
+    function openFromThumb(thumb) {
+        var card = thumb.closest('[data-diagram]');
+        if (!card) {
             return;
         }
-        var card = button.closest('[data-diagram]');
-        if (card) {
-            open(card, button.getAttribute('data-diagram-open'));
+        var empty = card.querySelector('[data-diagram-source]').value.trim() === '';
+        open(card, empty ? 'edit' : 'view');
+    }
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-diagram-open]');
+        if (button) {
+            var card = button.closest('[data-diagram]');
+            if (card) {
+                open(card, button.getAttribute('data-diagram-open'));
+            }
+            return;
         }
+        var thumb = event.target.closest('[data-diagram-thumb]');
+        if (thumb) {
+            openFromThumb(thumb);
+        }
+    });
+
+    // keyboard: the thumbnail is a button (Enter or Space)
+    document.addEventListener('keydown', function (event) {
+        if ((event.key !== 'Enter' && event.key !== ' ') || !event.target.matches || !event.target.matches('[data-diagram-thumb]')) {
+            return;
+        }
+        event.preventDefault();
+        openFromThumb(event.target);
     });
 
     window.TADiagram = {

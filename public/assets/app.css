@@ -439,3 +439,5 @@ button.add { max-width: 100%; white-space: normal; text-align: left; }
 .preview-diagram img { display: block; max-width: 100%; height: auto; margin: 0 auto; background: #fff; border-radius: 6px; }
 .preview-diagram.is-error { border-color: var(--danger); }
 .preview-diagram.is-pending { min-height: 56px; display: flex; align-items: center; justify-content: center; }
+
+.diagram-thumb:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

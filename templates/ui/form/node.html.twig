@@ -92,7 +92,7 @@
         {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
         <textarea name="{{ name }}" hidden class="code" data-diagram-source>{{ value }}</textarea>
         <div class="diagram-card">
-            <div class="diagram-thumb" data-diagram-thumb role="img" aria-label="Diagram preview"><span class="muted">Diagram</span></div>
+            <div class="diagram-thumb" data-diagram-thumb role="button" tabindex="0" aria-label="View the diagram" title="View the diagram"><span class="muted">Diagram</span></div>
             <div class="diagram-meta">
                 <code class="diagram-first" data-diagram-first>{{ (value ?? '')|split("\n")|first|default('(empty diagram)') }}</code>
                 <span class="pill">{{ (value ?? '')|split("\n")|length }} lines</span>
