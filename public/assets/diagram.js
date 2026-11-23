@@ -175,6 +175,12 @@
             requestClose();
         });
         dialog.addEventListener('keydown', shortcuts);
+        // the backdrop is the dialog itself (its box fills the dialog): a click outside the content closes it
+        dialog.addEventListener('click', function (event) {
+            if (event.target === dialog) {
+                requestClose();
+            }
+        });
         wireStage();
     }
 
@@ -251,15 +257,25 @@
     }
 
     function liveRender(fit) {
+        if (!state) {
+            return;
+        }
+        var owner = state; // a render that ends after the modal was closed, or reopened on another diagram, is dropped
         var source = state.mode === 'edit' ? input.value : state.current;
         state.current = source;
         codeView.textContent = source;
         render(source).then(function (svg) {
+            if (state !== owner) {
+                return;
+            }
             state.lastSvg = svg;
             errorBox.textContent = '';
             errorBox.hidden = true;
             placeSvg(svg, fit);
         }, function (error) {
+            if (state !== owner) {
+                return;
+            }
             // the last valid rendering stays on screen, dimmed, with the error under the editor
             errorBox.hidden = false;
             errorBox.textContent = String(error && error.message ? error.message : error).split('\n').slice(0, 4).join('\n');
@@ -269,7 +285,7 @@
                 canvas.classList.add('is-stale');
             }
         }).then(function () {
-            if (state.lastSvg !== null && errorBox.hidden) {
+            if (state === owner && state.lastSvg !== null && errorBox.hidden) {
                 canvas.classList.remove('is-stale');
             }
         });
