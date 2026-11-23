@@ -1,6 +1,6 @@
 {# One node of the generated form. node: FieldNode, name: HTML name, value: current value (or null), siblings: the object holding it, doc_format: format the stored values are written in. Recursive. #}
 {% if node.widget == 'object' %}
-    <fieldset class="object{% if node.name == 'data' %} root{% endif %}"{% if node.name in ['project', 'author'] %} data-nav-section="{{ node.name }}"{% endif %}>
+    <fieldset class="object{% if node.name == 'data' %} root{% endif %}"{% if node.name in ['project', 'author', 'sqlImpact'] %} data-kind="group"{% endif %}{% if node.name in ['project', 'author'] %} data-nav-section="{{ node.name }}"{% endif %}>
         {% if node.name != 'data' %}
             <legend>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</legend>
             {% if node.description %}<p class="help">{{ node.description }}</p>{% endif %}
@@ -16,6 +16,7 @@
         {% endfor %}
     </fieldset>
 {% elseif node.widget == 'array' %}
+    {% set kind_labels = { epics: 'Epic', userStories: 'User story', technicalStories: 'Technical story', subtasks: 'Subtask', resources: 'Resource', diagrams: 'Diagram', dependencies: 'Dependency', acceptanceCriteria: 'Criterion', acceptanceCriteriaCovered: 'Covered criterion' } %}
     <div class="collection" data-collection data-nav="{{ node.name }}"{% if node.name == 'dependencies' %} data-nav-section="dependencies"{% endif %}>
         <div class="collection-head">
             <strong>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</strong>
@@ -24,9 +25,10 @@
         {% if node.description %}<p class="help">{{ node.description }}</p>{% endif %}
         <div class="items" data-items>
             {% for item in (value ?? []) %}
-                <div class="item" data-item>
+                <div class="item" data-item data-kind="{{ node.name }}">
                     <div class="item-bar">
                         <span class="item-no">#{{ loop.index }}</span>
+                        <span class="item-kind">{{ kind_labels[node.name] ?? node.name }}</span>
                         <button type="button" data-move="up" title="Move up">&uarr;</button>
                         <button type="button" data-move="down" title="Move down">&darr;</button>
                         <button type="button" class="danger" data-remove>Remove</button>
@@ -36,9 +38,10 @@
             {% endfor %}
         </div>
         <template data-template>
-            <div class="item" data-item>
+            <div class="item" data-item data-kind="{{ node.name }}">
                 <div class="item-bar">
                     <span class="item-no">new</span>
+                    <span class="item-kind">{{ kind_labels[node.name] ?? node.name }}</span>
                     <button type="button" data-move="up" title="Move up">&uarr;</button>
                     <button type="button" data-move="down" title="Move down">&darr;</button>
                     <button type="button" class="danger" data-remove>Remove</button>

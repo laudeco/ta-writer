@@ -84,6 +84,8 @@
             var parent = stack[stack.length - 1];
             var li = document.createElement('li');
             li.className = 'doc-nav-item level-' + level;
+            var colour = el.hasAttribute('data-nav-section') && kind !== 'dependencies' ? 'group' : kind;
+            li.setAttribute('data-kind', colour);
             var a = document.createElement('a');
             a.href = '#' + ensureId(el);
             a.textContent = label;

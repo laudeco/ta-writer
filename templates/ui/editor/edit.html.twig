@@ -47,8 +47,32 @@
     <div class="doc-nav-head"><span>Outline</span><span class="doc-nav-tools"><button type="button" class="ghost small" data-collapse-all title="Collapse every block">Collapse all</button><button type="button" class="ghost small" data-expand-all title="Expand every block">Expand all</button></span></div>
     <input type="search" class="doc-nav-filter" placeholder="Filter (/)" aria-label="Filter the outline" data-docnav-filter>
     <div class="doc-nav-list" data-docnav-list></div>
+    <div class="doc-legend" aria-label="Colour legend">
+        <span class="doc-legend-title">Blocks</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-epic)"></i>Epic</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-user-story)"></i>User story</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-technical-story)"></i>Technical story</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-subtask)"></i>Subtask</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-resource)"></i>Resource</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-diagram)"></i>Diagram</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-dependency)"></i>Dependency</span>
+        <span class="doc-legend-item"><i class="kind-swatch" style="--sw: var(--kind-group)"></i>Group</span>
+    </div>
 </nav>
 <div class="editor-main">
+<details class="doc-legend-compact">
+    <summary>Legend</summary>
+    <div class="doc-legend-compact-body">
+        <span><i class="kind-swatch" style="--sw: var(--kind-epic)"></i>Epic</span>
+        <span><i class="kind-swatch" style="--sw: var(--kind-user-story)"></i>User story</span>
+        <span><i class="kind-swatch" style="--sw: var(--kind-technical-story)"></i>Technical story</span>
+        <span><i class="kind-swatch" style="--sw: var(--kind-subtask)"></i>Subtask</span>
+        <span><i class="kind-swatch" style="--sw: var(--kind-resource)"></i>Resource</span>
+        <span><i class="kind-swatch" style="--sw: var(--kind-diagram)"></i>Diagram</span>
+        <span><i class="kind-swatch" style="--sw: var(--kind-dependency)"></i>Dependency</span>
+        <span><i class="kind-swatch" style="--sw: var(--kind-group)"></i>Group</span>
+    </div>
+</details>
 <form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor">
     {% if id %}<input type="hidden" name="_version" value="{{ version }}">{% endif %}
     {# the format the stored values are written in: the rich fields convert from it when the format changes #}
