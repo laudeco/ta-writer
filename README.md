@@ -71,6 +71,7 @@ project root.
 | `TA_STORAGE_DIR` | `data/analyses` | Where the analyses are stored |
 | `TA_EXPORT_DIR` | `data/exports` | Where the publications are written by default |
 | `TA_HISTORY_MAX` | `0` | Versions kept per analysis, `0` = all |
+| `TA_AUTOSAVE_SECONDS` | `5` | Seconds after the last change before the editor saves a new version, `0` = autosave off |
 | `MMDC_BIN` | `mmdc` | mermaid-cli, used for the diagrams of the PDF and of the Confluence pages |
 | `CHROME_BIN` | `/usr/bin/chromium` | Chrome driven for the AGIR publication |
 | `AGIR_PROFILE_DIR` | `data/chrome-profile` | Browser profile that keeps the AGIR login between runs |

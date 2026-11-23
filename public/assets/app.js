@@ -81,6 +81,8 @@
         var dirty = false;
         editor.addEventListener('input', function () { dirty = true; });
         editor.addEventListener('submit', function () { dirty = false; });
+        // an autosave that stored everything typed so far: the page no longer holds unsaved changes
+        editor.addEventListener('ta:saved', function () { dirty = false; });
         window.addEventListener('beforeunload', function (event) {
             if (dirty) {
                 event.preventDefault();

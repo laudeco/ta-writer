@@ -9,6 +9,7 @@
 <script src="/assets/preview.js" defer></script>
 <script src="/assets/collapse.js" defer></script>
 <script src="/assets/defaults.js" defer></script>
+<script src="/assets/autosave.js" defer></script>
 {% endblock %}
 {% block body %}
 <div class="doc-head">
@@ -73,7 +74,7 @@
         <span><i class="kind-swatch" style="--sw: var(--kind-group)"></i>Group</span>
     </div>
 </details>
-<form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor">
+<form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor" data-autosave-seconds="{{ autosave_seconds }}">
     {% if id %}<input type="hidden" name="_version" value="{{ version }}">{% endif %}
     {# the format the stored values are written in: the rich fields convert from it when the format changes #}
     <input type="hidden" name="_format_original" value="{{ doc_format }}">
@@ -81,6 +82,10 @@
     {% include 'ui/form/node.html.twig' with { node: form, name: 'data', value: document, siblings: null, doc_format: doc_format } only %}
     <div class="savebar">
         <span class="hint">{{ id ? 'Saving creates a new version when the content changes.' : 'The analysis gets version 1.0.0.' }}</span>
+        {% if autosave_seconds > 0 %}
+        <label class="autosave-toggle"><input type="checkbox" checked data-autosave-toggle> Autosave</label>
+        <span class="autosave-status" data-autosave-status aria-live="polite"></span>
+        {% endif %}
         <a class="btn ghost" href="/">Cancel</a>
         <button type="submit" class="primary">{{ id ? 'Save changes' : 'Create analysis' }}</button>
     </div>

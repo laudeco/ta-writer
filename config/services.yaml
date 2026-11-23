@@ -3,6 +3,7 @@ parameters:
     app.storage_dir: '%kernel.project_dir%/%env(TA_STORAGE_DIR)%'
     app.export_dir: '%kernel.project_dir%/%env(TA_EXPORT_DIR)%'
     app.history_max: '%env(int:TA_HISTORY_MAX)%'
+    app.autosave_seconds: '%env(int:TA_AUTOSAVE_SECONDS)%'
     app.schema_path: '%kernel.project_dir%/config/schema/document.openapi.yaml'
     app.profile_dir: '%kernel.project_dir%/%env(AGIR_PROFILE_DIR)%'
     app.mermaid_cache: '%kernel.project_dir%/var/mermaid'

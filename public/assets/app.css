@@ -504,3 +504,9 @@ fieldset.object[data-kind="group"]:not(.root) { border-left: 4px solid var(--kin
     .doc-legend-compact { display: block; }
 }
 .doc-legend { position: sticky; bottom: -10px; background: var(--surface); }
+
+/* ---------- autosave ---------- */
+.autosave-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); cursor: pointer; white-space: nowrap; }
+.autosave-toggle input { width: auto; margin: 0; }
+.autosave-status { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; max-width: 46ch; }
+.autosave-status button { margin-left: 6px; }

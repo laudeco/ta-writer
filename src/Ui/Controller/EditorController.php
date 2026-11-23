@@ -7,6 +7,7 @@ namespace App\Ui\Controller;
 use App\Schema\SchemaValidationException;
 use App\Schema\SchemaValidator;
 use App\Storage\Exception\StaleVersionException;
+use App\Storage\StoredDocument;
 use App\Storage\TaRepositoryInterface;
 use App\Ui\Form\FieldNode;
 use App\Ui\Form\FormDataNormalizer;
@@ -15,6 +16,8 @@ use App\Validation\BusinessValidationException;
 use App\Validation\BusinessValidator;
 use App\Validation\Violation;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,7 +35,16 @@ final class EditorController extends AbstractController
         private readonly FormDataNormalizer $normalizer,
         private readonly SchemaValidator $schema,
         private readonly BusinessValidator $business,
+        #[Autowire('%app.autosave_seconds%')] private readonly int $autosaveSeconds = 5,
     ) {
+    }
+
+    /**
+     * The seconds the editor waits before it autosaves a change (0 = autosave is off).
+     */
+    public function autosaveSeconds(): int
+    {
+        return $this->autosaveSeconds;
     }
 
     #[Route('/', name: 'ui_index', methods: ['GET'])]
@@ -55,10 +67,18 @@ final class EditorController extends AbstractController
         $data = $this->normalizer->normalize($submitted, $this->formBuilder->build(), (string) ($submitted['format'] ?? 'markdown'));
         $errors = $this->errorsOf($data);
         if ($errors !== null) {
+            if ($this->wantsJson($request)) {
+                return $this->jsonErrors($errors);
+            }
+
             return $this->renderForm(null, $data, 0, $errors, Response::HTTP_UNPROCESSABLE_ENTITY, 0, (string) ($data['format'] ?? 'markdown'));
         }
 
         $stored = $this->repository->save(null, $data, 'ui');
+        if ($this->wantsJson($request)) {
+            // the first autosave of a new analysis: the page continues on the new document
+            return $this->jsonSaved($stored, true, Response::HTTP_CREATED);
+        }
         $this->addFlash('success', sprintf('Analysis %s created.', $stored->id));
 
         return $this->redirectToRoute('ui_edit', ['id' => $stored->id]);
@@ -81,15 +101,28 @@ final class EditorController extends AbstractController
         $data = $this->normalizer->normalize($request->request->all('data'), $this->formBuilder->build(), $originalFormat);
         $errors = $this->errorsOf($data);
         if ($errors !== null) {
+            if ($this->wantsJson($request)) {
+                return $this->jsonErrors($errors);
+            }
+
             return $this->renderForm($id, $data, $expected, $errors, Response::HTTP_UNPROCESSABLE_ENTITY, $this->historyCount($id), (string) ($data['format'] ?? $originalFormat));
         }
 
+        $wantsJson = $this->wantsJson($request);
+        $before = $wantsJson ? ($this->repository->get($id)->data['version'] ?? null) : null;
         try {
             $stored = $this->repository->save($id, $data, 'ui', $expected);
         } catch (StaleVersionException $e) {
+            if ($wantsJson) {
+                return new JsonResponse(['ok' => false, 'conflict' => true, 'current' => $e->current], Response::HTTP_CONFLICT);
+            }
             $this->addFlash('error', sprintf('Someone saved a newer version (%d) meanwhile. Your changes are shown below: copy them, reload, and apply them again.', $e->current));
 
             return $this->renderForm($id, $data, $e->expected, [], Response::HTTP_CONFLICT, $this->historyCount($id), (string) ($data['format'] ?? $originalFormat));
+        }
+        if ($wantsJson) {
+            // a save that changed nothing creates no version: the document version tells whether it changed
+            return $this->jsonSaved($stored, ($stored->data['version'] ?? null) !== $before, Response::HTTP_OK);
         }
         $this->addFlash('success', sprintf('Saved as version %d.', $stored->version));
 
@@ -103,6 +136,33 @@ final class EditorController extends AbstractController
         $this->addFlash('success', sprintf('Analysis %s deleted. Its history is kept on disk.', $id));
 
         return $this->redirectToRoute('ui_index');
+    }
+
+    private function wantsJson(Request $request): bool
+    {
+        return str_contains((string) $request->headers->get('Accept'), 'application/json');
+    }
+
+    /**
+     * @param list<array{path: string, message: string}> $errors
+     */
+    private function jsonErrors(array $errors): JsonResponse
+    {
+        return new JsonResponse(['ok' => false, 'errors' => $errors], Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    private function jsonSaved(StoredDocument $stored, bool $changed, int $status): JsonResponse
+    {
+        return new JsonResponse([
+            'ok' => true,
+            'id' => $stored->id,
+            'version' => $stored->version,
+            'documentVersion' => $stored->data['version'] ?? null,
+            'format' => $stored->data['format'] ?? 'markdown',
+            'changed' => $changed,
+            'history' => $this->historyCount($stored->id),
+            'savedAt' => $stored->updatedAt->format('H:i:s'),
+        ], $status);
     }
 
     /**
@@ -148,6 +208,7 @@ final class EditorController extends AbstractController
             'document' => $document,
             'form' => $this->formBuilder->build(),
             'errors' => $errors,
+            'autosave_seconds' => $this->autosaveSeconds,
         ], new Response(status: $status));
     }
 }
