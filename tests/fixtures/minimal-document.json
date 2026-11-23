@@ -1,0 +1,29 @@
+{
+    "format": "markdown",
+    "version": "1.0.0",
+    "structureVersion": "1.0.0",
+    "project": {"name": "Demo", "reference": "DEMO1"},
+    "author": {"name": "Test Author", "email": "test@example.com"},
+    "dependencies": [],
+    "epics": [
+        {
+            "title": "Epic one",
+            "reference": "E1",
+            "what": "Context of the epic.",
+            "resources": [],
+            "diagrams": [],
+            "userStories": [
+                {"title": "Story", "reference": "US1", "acceptanceCriteria": ["AC1 — First criterion", "AC2 — Second criterion"]}
+            ],
+            "technicalStories": [
+                {
+                    "title": "Storage", "reference": "TS1", "acceptanceCriteriaCovered": ["AC1 — First criterion"],
+                    "resources": [], "diagrams": [],
+                    "subtasks": [
+                        {"title": "Create the class", "what": "Do it.", "why": "Needed.", "where": "src/X.php", "how": "- [ ] step", "diagrams": [{"type": "mermaid", "content": "classDiagram\n    class X"}]}
+                    ]
+                }
+            ]
+        }
+    ]
+}
