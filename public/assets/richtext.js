@@ -68,7 +68,9 @@
         // the stored value, shown as the editor's starting point. 'silent': it is not an edit.
         var html = el.getAttribute('data-html') || '';
         if (html !== '') {
-            quill.clipboard.dangerouslyPasteHTML(html, 'silent');
+            // setContents, not dangerouslyPasteHTML: the paste moves the cursor into this editor, which would steal the focus
+            // from the field the person is typing in whenever an editor starts (on scroll, or on a click elsewhere)
+            quill.setContents(quill.clipboard.convert({ html: html }), 'silent');
         }
         quill.on('text-change', function (delta, oldDelta, source) {
             if (source === 'user') {
