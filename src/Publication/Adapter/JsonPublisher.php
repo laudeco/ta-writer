@@ -44,7 +44,7 @@ final class JsonPublisher implements PublisherInterface
 
     public function publish(PublishRequest $request): PublishResult
     {
-        $output = ExportPath::for($this->exportDir, $request->documentId, 'json', $request->options['output'] ?? null);
+        $output = ExportPath::for($this->exportDir, $request->documentId, $request->document, 'json',$request->options['output'] ?? null);
         $files = [$output];
         $withSchema = ($request->options['withSchema'] ?? 'yes') !== 'no';
         if ($withSchema) {

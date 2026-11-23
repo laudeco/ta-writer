@@ -87,11 +87,15 @@ project root.
 ```
 data/analyses/20261123/ta-writer.json            current content of the document
 data/analyses/20261123/ta-writer.versions/       one snapshot per version + index.json
-data/exports/20261123/ta-writer.md               publications
+data/exports/20261123/TA-WRITER_v1.0.2.md        publications (json, md, pdf, schema.json)
 ```
 
 A document id is `<YYYYMMDD>_<slug>`. The slug comes from the project reference (`TA-WRITER` gives `ta-writer`); a
 collision gets a suffix (`ta-writer-2`).
+
+Exports are named after the project reference (case kept) and the document version: `<REFERENCE>_v<version>.<ext>`,
+so `TA-WRITER` at version `1.0.2` gives `TA-WRITER_v1.0.2.pdf`. The JSON export also writes `TA-WRITER_v1.0.2.schema.json`.
+The `--option output=<path>` option still sets the path explicitly.
 
 Versions are never rewritten. A restore creates a new version whose origin is `restore`.
 

@@ -45,7 +45,7 @@ final class PdfPublisher implements PublisherInterface
 
     public function publish(PublishRequest $request): PublishResult
     {
-        $output = ExportPath::for($this->exportDir, $request->documentId, 'pdf', $request->options['output'] ?? null);
+        $output = ExportPath::for($this->exportDir, $request->documentId, $request->document, 'pdf',$request->options['output'] ?? null);
         if ($request->dryRun) {
             return new PublishResult('dry-run', ["would write $output"], [$output]);
         }
