@@ -45,6 +45,9 @@
                 window.TACollapse.initIn(item);
                 window.TACollapse.expandTo(item); // the new block is shown, with the blocks around it
             }
+            if (window.TAChildMenu) {
+                window.TAChildMenu.initIn(item);
+            }
             renumber(collection.querySelector(':scope > [data-items]'));
             refreshCount(collection);
             var firstField = item.querySelector('input, textarea, select');
