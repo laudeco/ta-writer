@@ -51,7 +51,7 @@ final class PdfPublisher implements PublisherInterface
         }
 
         $model = $this->builder->build($request->document);
-        $html = $this->twig->render('export/document.html.twig', ['doc' => $model]);
+        $html = $this->twig->render('export/document.html.twig', ['doc' => $model, 'stats' => $this->stats($model)]);
         $css = (string) file_get_contents($this->projectDir.'/assets/pdf/theme.css');
 
         if (!is_dir($this->tempDir) && !mkdir($this->tempDir, 0775, true) && !is_dir($this->tempDir)) {
@@ -72,12 +72,44 @@ final class PdfPublisher implements PublisherInterface
         ]);
         $mpdf->SetTitle((string) ($model['project']['name'] ?? 'Technical analysis'));
         $mpdf->SetAuthor((string) ($model['author']['name'] ?? ''));
-        $mpdf->h2toc = ['H2' => 0, 'H3' => 1, 'H4' => 2];
-        $mpdf->SetHTMLFooter(sprintf('<div style="font-size:8pt;color:#829ab1;text-align:right">%s &middot; {PAGENO} / {nbpg}</div>', htmlspecialchars($project)));
+        // the contents lists the epics (H2) and the technical stories (H3); user stories and subtasks are not in it
+        $mpdf->h2toc = ['H2' => 0, 'H3' => 1];
+        $version = htmlspecialchars((string) ($model['version'] ?: '-'));
+        $mpdf->SetHTMLFooter(sprintf(
+            '<table style="width:100%%;font-size:7.5pt;color:#64748b;border-collapse:collapse"><tr>'
+            .'<td style="text-align:left">%s &middot; v%s</td><td style="text-align:right">{PAGENO} / {nbpg}</td></tr></table>',
+            htmlspecialchars($project),
+            $version,
+        ));
         $mpdf->WriteHTML($css, HTMLParserMode::HEADER_CSS);
         $mpdf->WriteHTML($html, HTMLParserMode::HTML_BODY);
         $mpdf->Output($output, \Mpdf\Output\Destination::FILE);
 
         return new PublishResult('done', ["wrote $output"], [$output]);
+    }
+
+    /**
+     * Figures of the cover: epics, technical stories, subtasks and diagrams of the analysis.
+     *
+     * @param array<string, mixed> $model
+     *
+     * @return array{epics: int, stories: int, subtasks: int, diagrams: int}
+     */
+    private function stats(array $model): array
+    {
+        $stats = ['epics' => count($model['epics']), 'stories' => 0, 'subtasks' => 0, 'diagrams' => 0];
+        foreach ($model['epics'] as $epic) {
+            $stats['diagrams'] += count($epic['diagrams']);
+            foreach ($epic['technicalStories'] as $ts) {
+                ++$stats['stories'];
+                $stats['diagrams'] += count($ts['diagrams']);
+                foreach ($ts['subtasks'] as $sub) {
+                    ++$stats['subtasks'];
+                    $stats['diagrams'] += count($sub['diagrams']);
+                }
+            }
+        }
+
+        return $stats;
     }
 }

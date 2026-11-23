@@ -1,0 +1,17 @@
+{# one epic: its own running header, then its context, its user stories, then each technical story #}
+<sethtmlpageheader name="epic{{ index }}" value="on" show-this-page="1"></sethtmlpageheader>
+{% if not first %}<pagebreak />{% endif %}
+<h2 class="epic-title">{{ epic.displayTitle }}</h2>
+{% if epic.what is not empty %}
+    <div class="section-title">Context</div>
+    <div class="text">{{ epic.what|content_html(doc.format) }}</div>
+{% endif %}
+{% include 'export/_resources.html.twig' with { resources: epic.resources, format: doc.format } only %}
+{% for diagram in epic.diagrams %}<div class="diagram-block">{{ mermaid_img(diagram.content) }}</div>{% endfor %}
+
+{% for us in epic.userStories %}
+    <h4 class="section-title" style="color:#334155">{{ us.displayTitle }}</h4>
+    <ul class="criteria">{% for ac in us.acceptanceCriteria %}<li>{{ ac }}</li>{% endfor %}</ul>
+    {% include 'export/_resources.html.twig' with { resources: us.resources, format: doc.format } only %}
+    {% for diagram in us.diagrams %}<div class="diagram-block">{{ mermaid_img(diagram.content) }}</div>{% endfor %}
+{% endfor %}

@@ -1,0 +1,19 @@
+{# one technical story: a page of its own #}
+<pagebreak />
+<h3 class="ts-title">{{ ts.displayTitle }}</h3>
+{% if ts.featureToggles is not empty %}
+    <div style="margin-bottom:6pt">{% for t in ts.featureToggles %}<span class="chip gray">{{ t }}</span>{% endfor %}</div>
+{% endif %}
+{% if ts.what is not empty %}
+    <div class="section-title">What</div>
+    <div class="text">{{ ts.what|content_html(doc.format) }}</div>
+{% endif %}
+{% if ts.why is not empty %}
+    <div class="why"><span class="label">Why</span><div class="text" style="margin-top:3pt">{{ ts.why|content_html(doc.format) }}</div></div>
+{% endif %}
+{% if ts.acceptanceCriteriaCovered is not empty %}
+    <div class="section-title">Acceptance criteria covered</div>
+    <div>{% for ac in ts.acceptanceCriteriaCovered %}<span class="chip ok">{{ ac|replace({'`': ''}) }}</span>{% endfor %}</div>
+{% endif %}
+{% include 'export/_resources.html.twig' with { resources: ts.resources, format: doc.format } only %}
+{% for diagram in ts.diagrams %}<div class="diagram-block">{{ mermaid_img(diagram.content) }}</div>{% endfor %}

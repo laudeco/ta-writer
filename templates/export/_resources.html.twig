@@ -1,12 +1,8 @@
 {% if resources is not empty %}
 <div class="resources">
-    <strong>Resources</strong>
-    <ul>
+    <span class="label">Resources</span>
     {% for resource in resources %}
-        <li><span class="tag">{{ resource.type }}</span>
-            {% if resource.type == 'link' or resource.type == 'image' %}<a href="{{ resource.content }}">{{ resource.content }}</a>{% else %}{{ resource.content }}{% endif %}
-        </li>
+        <div class="small" style="margin-top:3pt"><span class="tag">{{ resource.type }}</span>{% if resource.type == 'link' or resource.type == 'image' %}<a href="{{ resource.content }}">{{ resource.content }}</a>{% elseif resource.type == 'note' %}<div class="text">{{ resource.content|content_html(format) }}</div>{% else %}{{ resource.content }}{% endif %}</div>
     {% endfor %}
-    </ul>
 </div>
 {% endif %}

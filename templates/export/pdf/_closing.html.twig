@@ -1,0 +1,51 @@
+<pagebreak />
+<h2 class="epic-title">Acceptance criteria coverage</h2>
+{% if doc.acCoverage is empty %}
+    <p class="muted">No acceptance criteria.</p>
+{% else %}
+    <table class="grid">
+        <thead><tr><th style="width:58%">Criterion</th><th>Covered by</th></tr></thead>
+        <tbody>
+        {% for row in doc.acCoverage %}
+            <tr>
+                <td>{{ row.criterion }}{% if not row.declared %} <span class="muted">(not declared)</span>{% endif %}</td>
+                <td>
+                    {% for by in row.coveredBy %}<span class="chip ok">{{ by }}</span>{% else %}<span class="status-ko">not covered</span>{% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+<h2 class="epic-title" style="margin-top:18pt">SQL impact</h2>
+<table class="grid">
+    <thead><tr><th>Technical story</th><th class="num">Columns</th><th class="num">Rows</th></tr></thead>
+    <tbody>
+    {% for row in doc.sqlImpact.rows %}
+        <tr><td>{{ row.title }}</td>
+            {% if row.sqlImpact is null %}<td class="num muted">&mdash;</td><td class="num muted">&mdash;</td>{% else %}<td class="num">{{ row.sqlImpact.nbColumns }}</td><td class="num">{{ row.sqlImpact.nbRows }}</td>{% endif %}
+        </tr>
+    {% endfor %}
+    <tr class="total"><td>Total</td><td class="num">{{ doc.sqlImpact.total.nbColumns }}</td><td class="num">{{ doc.sqlImpact.total.nbRows }}</td></tr>
+    </tbody>
+</table>
+<p class="muted small">Only migrations are counted; rows written at runtime by the code are not.</p>
+
+<pagebreak />
+<h2 class="epic-title">Dependencies</h2>
+{% if doc.dependencies is empty %}
+    <p class="muted">No dependency.</p>
+{% else %}
+    <table class="grid">
+        <thead><tr><th>Blocked</th><th>Blocked by</th></tr></thead>
+        <tbody>
+        {% for dep in doc.dependencies %}
+            <tr>
+                <td>{% if dep.toLink is not null %}<a href="{{ dep.toLink }}">{{ dep.toTitle }}</a>{% else %}{{ dep.toTitle }}{% endif %}</td>
+                <td>{% if dep.fromLink is not null %}<a href="{{ dep.fromLink }}">{{ dep.fromTitle }}</a>{% else %}{{ dep.fromTitle }}{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}

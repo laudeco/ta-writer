@@ -1,0 +1,21 @@
+<div class="cover-band">
+    <div class="eyebrow">Technical analysis</div>
+    <h1>{{ doc.project.name|default('Technical analysis') }}</h1>
+    <div class="ref">{{ doc.project.reference|default('-') }}</div>
+</div>
+<div class="cover-body">
+    <table class="stat-table" autosize="1">
+        <tr>
+            <td class="stat"><div style="font-size:20pt;font-weight:bold;color:#4338ca">{{ stats.epics }}</div><div class="l">Epics</div></td>
+            <td class="stat"><div style="font-size:20pt;font-weight:bold;color:#4338ca">{{ stats.stories }}</div><div class="l">Technical stories</div></td>
+            <td class="stat"><div style="font-size:20pt;font-weight:bold;color:#4338ca">{{ stats.subtasks }}</div><div class="l">Subtasks</div></td>
+            <td class="stat"><div style="font-size:20pt;font-weight:bold;color:#4338ca">{{ stats.diagrams }}</div><div class="l">Diagrams</div></td>
+        </tr>
+    </table>
+    <table class="meta-table">
+        <tr><td class="k">Author</td><td>{{ doc.author.name|default('-') }}{% if doc.author.email is defined %} &nbsp;<span class="muted">{{ doc.author.email }}</span>{% endif %}</td></tr>
+        <tr><td class="k">Version</td><td>{{ doc.version|default('-') }} <span class="muted">· structure {{ doc.structureVersion|default('-') }}</span></td></tr>
+        <tr><td class="k">Project link</td><td>{% if doc.project.link is defined %}<a href="{{ doc.project.link }}">{{ doc.project.link }}</a>{% else %}<span class="muted">-</span>{% endif %}</td></tr>
+        <tr><td class="k">Generated</td><td>{{ "now"|date("Y-m-d H:i") }}</td></tr>
+    </table>
+</div>
