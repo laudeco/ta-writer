@@ -3,21 +3,25 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <title>{% block title %}TA Writer{% endblock %}</title>
     <link rel="stylesheet" href="/assets/app.css">
 </head>
 <body>
 <header class="topbar">
-    <a class="brand" href="/">TA Writer</a>
-    <nav>
-        <a href="/">Analyses</a>
-        <a href="/documents/new">New analysis</a>
-        <a href="/api/documents" target="_blank">API</a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">TA</span>TA Writer</a>
+    <nav class="topnav" aria-label="Main">
+        <a href="/" class="{{ app.request.pathInfo == '/' or app.request.pathInfo starts with '/documents/' and app.request.pathInfo != '/documents/new' ? 'active' : '' }}">Analyses</a>
+        <a href="/documents/new" class="{{ app.request.pathInfo == '/documents/new' ? 'active' : '' }}">New analysis</a>
+    </nav>
+    <nav class="topnav topnav-end" aria-label="Tools">
+        <a href="/api/documents" target="_blank" rel="noopener">API</a>
+        <a href="/api/openapi" target="_blank" rel="noopener">OpenAPI</a>
     </nav>
 </header>
 <main>
-    {% for flash in app.flashes('success') %}<div class="flash ok">{{ flash }}</div>{% endfor %}
-    {% for flash in app.flashes('error') %}<div class="flash error">{{ flash }}</div>{% endfor %}
+    {% for flash in app.flashes('success') %}<div class="flash ok" role="status">{{ flash }}</div>{% endfor %}
+    {% for flash in app.flashes('error') %}<div class="flash error" role="alert">{{ flash }}</div>{% endfor %}
     {% block body %}{% endblock %}
 </main>
 <script src="/assets/app.js" defer></script>

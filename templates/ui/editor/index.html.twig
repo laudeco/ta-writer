@@ -1,30 +1,49 @@
 {% extends 'ui/base.html.twig' %}
 {% block body %}
 <div class="page-head">
-    <h1>Analyses</h1>
-    <a class="button" href="/documents/new">New analysis</a>
+    <div>
+        <h1>Analyses</h1>
+        <p class="sub">Technical analyses stored as JSON, with their full version history.</p>
+    </div>
+    <div class="toolbar">
+        <a class="btn primary" href="/documents/new">+ New analysis</a>
+    </div>
 </div>
+
+<div class="stat-row">
+    <div class="stat"><div class="label">Analyses</div><div class="value">{{ items|length }}</div></div>
+    {% if items is not empty %}
+    <div class="stat"><div class="label">Last update</div><div class="value" style="font-size:15px;font-weight:600">{{ items[0].updatedAt|slice(0, 16)|replace({'T': ' '}) }}</div></div>
+    {% endif %}
+</div>
+
 {% if items is empty %}
-    <p class="muted">No analysis yet. Create one, or inject one with the API (<code>POST /api/documents</code>).</p>
+    <div class="card empty">
+        <h2>No analysis yet</h2>
+        <p>Create one with the form, or inject one through <code>POST /api/documents</code>.</p>
+        <a class="btn primary" href="/documents/new">Create the first analysis</a>
+    </div>
 {% else %}
-    <table class="grid">
-        <thead><tr><th>Id</th><th>Project</th><th>Reference</th><th>Version</th><th>Updated</th><th></th></tr></thead>
-        <tbody>
-        {% for item in items %}
-            <tr>
-                <td><code>{{ item.id }}</code></td>
-                <td>{{ item.title }}</td>
-                <td>{{ item.reference }}</td>
-                <td>{{ item.version }}</td>
-                <td>{{ item.updatedAt|slice(0, 16)|replace({'T': ' '}) }}</td>
-                <td class="actions">
-                    <a href="/documents/{{ item.id }}/edit">Edit</a>
-                    <a href="/documents/{{ item.id }}/versions">Versions</a>
-                    <a href="/documents/{{ item.id }}/publish">Publish</a>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrap">
+        <table class="grid">
+            <thead><tr><th>Identifier</th><th>Project</th><th>Reference</th><th>Version</th><th>Updated</th><th></th></tr></thead>
+            <tbody>
+            {% for item in items %}
+                <tr>
+                    <td><a class="id" href="/documents/{{ item.id }}/edit">{{ item.id }}</a></td>
+                    <td>{{ item.title }}</td>
+                    <td><span class="pill">{{ item.reference }}</span></td>
+                    <td><span class="pill primary">v{{ item.version }}</span></td>
+                    <td class="muted small">{{ item.updatedAt|slice(0, 16)|replace({'T': ' '}) }}</td>
+                    <td class="actions">
+                        <a class="btn small ghost" href="/documents/{{ item.id }}/edit">Edit</a>
+                        <a class="btn small ghost" href="/documents/{{ item.id }}/versions">History</a>
+                        <a class="btn small" href="/documents/{{ item.id }}/publish">Publish</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endif %}
 {% endblock %}

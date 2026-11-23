@@ -1,23 +1,32 @@
 {% extends 'ui/base.html.twig' %}
-{% block title %}{{ id ? 'Edit ' ~ id : 'New analysis' }} - TA Writer{% endblock %}
+{% block title %}{{ id ? id ~ ' — ' : 'New analysis — ' }}TA Writer{% endblock %}
 {% block body %}
-<div class="page-head">
-    <h1>{{ id ? id : 'New analysis' }}</h1>
-    {% if id %}
-        <div class="links">
-            <span class="badge">version {{ version }}</span>
-            <a href="/documents/{{ id }}/versions">History</a>
-            <a href="/documents/{{ id }}/publish">Publish</a>
-            <a href="/api/documents/{{ id }}" target="_blank">JSON</a>
+<div class="doc-head">
+    <div>
+        <p class="eyebrow">{{ id ? 'Analysis' : 'New analysis' }}</p>
+        <h1>{{ id ? id : 'Untitled analysis' }}</h1>
+        {% if id %}
+        <div class="meta">
+            <span class="pill primary" title="Version of the content">v{{ document.version|default('—') }}</span>
+            <span class="pill" title="Structure of the OpenAPI file, read-only">structure {{ document.structureVersion|default('—') }}</span>
+            <span class="pill" title="Number of saved versions">{{ history }} saved</span>
         </div>
+        {% endif %}
+    </div>
+    {% if id %}
+    <div class="actions">
+        <a class="btn ghost" href="/documents/{{ id }}/versions">History</a>
+        <a class="btn ghost" href="/documents/{{ id }}/publish">Publish</a>
+        <a class="btn ghost" href="/api/documents/{{ id }}" target="_blank" rel="noopener">JSON</a>
+    </div>
     {% endif %}
 </div>
 
 {% if errors is not empty %}
-    <div class="flash error">
-        <strong>The analysis was not saved.</strong>
+    <div class="flash error" role="alert">
+        <strong>The analysis was not saved. Fix these fields:</strong>
         <ul>
-            {% for error in errors %}<li><code>{{ error.path }}</code> {{ error.message }}</li>{% endfor %}
+            {% for error in errors %}<li><code>{{ error.path }}</code> — {{ error.message }}</li>{% endfor %}
         </ul>
     </div>
 {% endif %}
@@ -26,8 +35,9 @@
     {% if id %}<input type="hidden" name="_version" value="{{ version }}">{% endif %}
     {% include 'ui/form/node.html.twig' with { node: form, name: 'data', value: document } only %}
     <div class="savebar">
-        <button type="submit" class="primary">Save</button>
-        <a href="/">Cancel</a>
+        <span class="hint">{{ id ? 'Saving creates a new version when the content changes.' : 'The analysis gets version 1.0.0.' }}</span>
+        <a class="btn ghost" href="/">Cancel</a>
+        <button type="submit" class="primary">{{ id ? 'Save changes' : 'Create analysis' }}</button>
     </div>
 </form>
 {% endblock %}

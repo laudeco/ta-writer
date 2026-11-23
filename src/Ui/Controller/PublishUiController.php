@@ -67,6 +67,7 @@ final class PublishUiController extends AbstractController
             'id' => $id,
             'format' => $format,
             'formats' => $formats,
+            'document_version' => $this->repository->get($id)->data['version'] ?? null,
             'options' => $options,
             'answers' => $answers,
             'result' => $result,

@@ -1,25 +1,31 @@
 {% extends 'ui/base.html.twig' %}
-{% block title %}Diff {{ from }} to {{ to }} - TA Writer{% endblock %}
+{% block title %}Diff {{ from }} → {{ to }} — TA Writer{% endblock %}
 {% block body %}
-<div class="page-head">
-    <h1>Changes from version {{ from }} to version {{ to }}</h1>
-    <a href="/documents/{{ id }}/versions">Back to the history</a>
+<div class="doc-head">
+    <div>
+        <p class="eyebrow">Comparison</p>
+        <h1>Version {{ from }} → version {{ to }}</h1>
+        <div class="meta"><span class="pill">{{ changes|length }} change(s)</span></div>
+    </div>
+    <div class="actions"><a class="btn ghost" href="/documents/{{ id }}/versions">← History</a></div>
 </div>
 {% if changes is empty %}
-    <p class="muted">No difference.</p>
+    <div class="card empty"><h2>No difference</h2><p>These two versions have the same content.</p></div>
 {% else %}
-    <table class="grid">
-        <thead><tr><th>Path</th><th>Change</th><th>Before</th><th>After</th></tr></thead>
-        <tbody>
-        {% for change in changes %}
-            <tr>
-                <td><code>{{ change.path }}</code></td>
-                <td><span class="tag {{ change.type }}">{{ change.type }}</span></td>
-                <td class="small">{{ change.before is null ? '' : (change.before is iterable ? change.before|json_encode : change.before) }}</td>
-                <td class="small">{{ change.after is null ? '' : (change.after is iterable ? change.after|json_encode : change.after) }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrap">
+        <table class="grid">
+            <thead><tr><th>Path</th><th>Change</th><th>Before</th><th>After</th></tr></thead>
+            <tbody>
+            {% for change in changes %}
+                <tr>
+                    <td><code>{{ change.path }}</code></td>
+                    <td><span class="tag {{ change.type }}">{{ change.type }}</span></td>
+                    <td class="small">{{ change.before is null ? '' : (change.before is iterable ? change.before|json_encode : change.before) }}</td>
+                    <td class="small">{{ change.after is null ? '' : (change.after is iterable ? change.after|json_encode : change.after) }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endif %}
 {% endblock %}

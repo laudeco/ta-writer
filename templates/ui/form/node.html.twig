@@ -59,14 +59,14 @@
 {% elseif node.widget == 'textarea' or node.widget == 'code' %}
     <label class="field wide">
         <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
-        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
         <textarea name="{{ name }}" rows="{{ node.widget == 'code' ? 10 : 4 }}" class="{{ node.widget }}"{% if node.placeholder %} placeholder="{{ node.placeholder }}"{% endif %}>{{ value }}</textarea>
+        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
     </label>
 {% else %}
     {% set input = node.widget == 'integer' ? 'number' : (node.widget == 'url' ? 'url' : (node.widget == 'email' ? 'email' : 'text')) %}
     <label class="field">
         <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
-        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
         <input type="{{ input }}" name="{{ name }}" value="{{ value }}"{% if node.placeholder %} placeholder="{{ node.placeholder }}"{% endif %}{% if node.widget == 'integer' %} min="0" step="1"{% endif %}{% if node.readOnly %} readonly class="readonly"{% endif %}>
+        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
     </label>
 {% endif %}

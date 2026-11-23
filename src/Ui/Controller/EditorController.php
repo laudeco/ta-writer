@@ -67,7 +67,7 @@ final class EditorController extends AbstractController
     {
         $stored = $this->repository->get($id);
 
-        return $this->renderForm($id, $stored->data, $stored->version, []);
+        return $this->renderForm($id, $stored->data, $stored->version, [], Response::HTTP_OK, count($this->repository->versions($id)));
     }
 
     #[Route('/documents/{id}', name: 'ui_update', methods: ['POST'])]
@@ -129,11 +129,12 @@ final class EditorController extends AbstractController
      * @param array<string, mixed>                  $document
      * @param list<array{path: string, message: string}> $errors
      */
-    private function renderForm(?string $id, array $document, int $version, array $errors, int $status = Response::HTTP_OK): Response
+    private function renderForm(?string $id, array $document, int $version, array $errors, int $status = Response::HTTP_OK, int $history = 0): Response
     {
         return $this->render('ui/editor/edit.html.twig', [
             'id' => $id,
             'version' => $version,
+            'history' => $history,
             'document' => $document,
             'form' => $this->formBuilder->build(),
             'errors' => $errors,

@@ -1,34 +1,44 @@
 {% extends 'ui/base.html.twig' %}
-{% block title %}History {{ id }} - TA Writer{% endblock %}
+{% block title %}History {{ id }} — TA Writer{% endblock %}
 {% block body %}
-<div class="page-head">
-    <h1>History of <code>{{ id }}</code></h1>
-    <a href="/documents/{{ id }}/edit">Back to the analysis</a>
+<div class="doc-head">
+    <div>
+        <p class="eyebrow">History</p>
+        <h1>{{ id }}</h1>
+        <div class="meta"><span class="pill">{{ rows|length }} version(s)</span></div>
+    </div>
+    <div class="actions"><a class="btn ghost" href="/documents/{{ id }}/edit">← Back to the analysis</a></div>
 </div>
-<table class="grid">
-    <thead><tr><th>Version</th><th>Date (UTC)</th><th>Origin</th><th>Changed</th><th></th></tr></thead>
-    <tbody>
-    {% for row in rows|reverse %}
-        {% set version = row.meta %}
-        <tr>
-            <td>{{ version.number }}{% if version.number == current %} <span class="badge">current</span>{% endif %}</td>
-            <td>{{ version.createdAt|date('Y-m-d H:i:s') }}</td>
-            <td>{{ version.origin }}</td>
-            <td class="small">
-                {% for path in version.changedPaths|slice(0, 6) %}<code>{{ path }}</code><br>{% else %}&mdash;{% endfor %}
-                {% if version.changedPaths|length > 6 %}<span class="muted">and {{ version.changedPaths|length - 6 }} more</span>{% endif %}
-            </td>
-            <td class="actions">
-                <a href="/documents/{{ id }}/versions/{{ version.number }}">View</a>
-                {% if row.previous is not null %}<a href="/documents/{{ id }}/versions/{{ row.previous }}/diff/{{ version.number }}">Diff with previous</a>{% endif %}
-                {% if version.number != current %}
-                    <form method="post" action="/documents/{{ id }}/versions/{{ version.number }}/restore" class="inline" onsubmit="return confirm('Restore version {{ version.number }} as the new current version? Nothing is deleted.');">
-                        <button type="submit">Restore</button>
-                    </form>
-                {% endif %}
-            </td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+
+<div class="table-wrap">
+    <table class="grid">
+        <thead><tr><th>Version</th><th>Saved (UTC)</th><th>Origin</th><th>Changed</th><th></th></tr></thead>
+        <tbody>
+        {% for row in rows|reverse %}
+            {% set version = row.meta %}
+            <tr>
+                <td>
+                    <strong>{{ version.number }}</strong>
+                    {% if version.number == current %}<span class="pill primary" style="margin-left:6px">current</span>{% endif %}
+                </td>
+                <td class="small">{{ version.createdAt|date('Y-m-d H:i:s') }}</td>
+                <td><span class="pill">{{ version.origin }}</span></td>
+                <td class="small">
+                    {% for path in version.changedPaths|slice(0, 5) %}<code>{{ path }}</code>{% if not loop.last %} {% endif %}{% else %}<span class="muted">—</span>{% endfor %}
+                    {% if version.changedPaths|length > 5 %}<span class="muted"> +{{ version.changedPaths|length - 5 }} more</span>{% endif %}
+                </td>
+                <td class="actions">
+                    <a class="btn small ghost" href="/documents/{{ id }}/versions/{{ version.number }}">View</a>
+                    {% if row.previous is not null %}<a class="btn small ghost" href="/documents/{{ id }}/versions/{{ row.previous }}/diff/{{ version.number }}">Diff</a>{% endif %}
+                    {% if version.number != current %}
+                        <form method="post" action="/documents/{{ id }}/versions/{{ version.number }}/restore" class="inline" onsubmit="return confirm('Restore version {{ version.number }} as the new current version? Nothing is deleted.');">
+                            <button type="submit" class="small">Restore</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}
