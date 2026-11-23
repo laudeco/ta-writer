@@ -38,6 +38,9 @@
             if (window.TADiagram) {
                 window.TADiagram.initIn(item);
             }
+            if (window.TADefaults) {
+                window.TADefaults.fill(item);
+            }
             if (window.TACollapse) {
                 window.TACollapse.initIn(item);
                 window.TACollapse.expandTo(item); // the new block is shown, with the blocks around it
