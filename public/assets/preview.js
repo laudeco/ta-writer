@@ -52,6 +52,46 @@
         }
     }
 
+    // a warning above the preview: the last good preview stays, dimmed, with the reason and a retry
+    function showWarning(lines) {
+        var box = root.querySelector('[data-preview-warning]');
+        var text = root.querySelector('[data-preview-warning-text]');
+        var list = root.querySelector('[data-preview-warning-list]');
+        text.textContent = lines[0];
+        list.innerHTML = '';
+        lines.slice(1).forEach(function (line) {
+            var li = document.createElement('li');
+            li.textContent = line;
+            list.appendChild(li);
+        });
+        list.hidden = lines.length < 2;
+        box.hidden = false;
+        body.classList.add('is-stale');
+        setStatus('Preview out of date');
+        var dot = document.querySelector('[data-preview-dot]');
+        if (dot) {
+            dot.hidden = false;
+        }
+    }
+
+    function clearWarning() {
+        root.querySelector('[data-preview-warning]').hidden = true;
+        body.classList.remove('is-stale');
+        var dot = document.querySelector('[data-preview-dot]');
+        if (dot) {
+            dot.hidden = true;
+        }
+    }
+
+    // diagrams that could not be rendered, in the background; shown once the queue is empty
+    var diagramFailures = [];
+    function diagramsSettled() {
+        if (running === 0 && queue.length === 0 && diagramFailures.length > 0) {
+            var n = diagramFailures.length;
+            showWarning([n + (n === 1 ? ' diagram could not be rendered' : ' diagrams could not be rendered')].concat(diagramFailures));
+        }
+    }
+
     // ---------- diagrams: images from the server, in the background ----------
 
     function loadImage(source) {
@@ -99,6 +139,7 @@
                 job.figure.addEventListener('click', function () { window.TADiagram.show(job.source); });
             }
         }, function (error) {
+            diagramFailures.push(String(error && error.message ? error.message : error).split('\n')[0]);
             if (job.figure.isConnected) {
                 job.figure.classList.remove('is-pending');
                 job.figure.classList.add('is-error');
@@ -122,6 +163,7 @@
             showDiagram(next).then(function () {
                 running -= 1;
                 pump();
+                diagramsSettled();
             });
         }
     }
@@ -147,6 +189,7 @@
             controller.abort();
         }
         var id = ++requestId;
+        diagramFailures = [];
         controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
         var data = new FormData(form);
         data.set('path', path);
@@ -158,7 +201,9 @@
             signal: controller ? controller.signal : undefined
         }).then(function (response) {
             if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
+                return response.text().then(function (message) {
+                    throw new Error(message || 'The preview could not be generated (HTTP ' + response.status + ').');
+                });
             }
 
             return response.text();
@@ -171,13 +216,16 @@
             }
             lastPath = path;
             body.innerHTML = html;
+            clearWarning();
             setStatus('updated ' + new Date().toTimeString().slice(0, 8));
             queueDiagrams();
         }).catch(function (error) {
             if (id !== requestId || (error && error.name === 'AbortError')) {
-                return;
+                return; // superseded by a newer request: not an error
             }
-            setStatus('preview unavailable');
+            // a network failure is a TypeError from fetch: the server did not answer at all
+            var reason = error instanceof TypeError ? 'The server did not answer. Check that it is running.' : String(error.message || error).split('\n')[0];
+            showWarning(['Preview could not be updated.', reason]);
         });
     }
 
@@ -222,6 +270,7 @@
             toggle.addEventListener('click', function () { setOpen(!root.classList.contains('is-open')); });
         }
 
+        root.querySelector('[data-preview-retry]').addEventListener('click', function () { update(); });
         form.addEventListener('input', schedule);
         form.addEventListener('change', schedule);
         if (window.TADocNav) {

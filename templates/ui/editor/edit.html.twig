@@ -27,7 +27,7 @@
         <a class="btn ghost" href="/documents/{{ id }}/versions">History</a>
         <a class="btn ghost" href="/documents/{{ id }}/publish">Publish</a>
         <a class="btn ghost" href="/api/documents/{{ id }}" target="_blank" rel="noopener">JSON</a>
-        <button type="button" class="ghost preview-toggle" data-preview-toggle aria-expanded="false">Preview</button>
+        <button type="button" class="ghost preview-toggle" data-preview-toggle aria-expanded="false">Preview<span class="preview-dot" data-preview-dot hidden></span></button>
     </div>
     {% endif %}
 </div>
@@ -70,6 +70,11 @@
             <button type="button" class="small" data-preview-mode="document" aria-pressed="false">Document</button>
         </div>
         <button type="button" class="ghost small preview-close" data-preview-close>Close</button>
+    </div>
+    <div class="preview-warning" role="alert" data-preview-warning hidden>
+        <div class="preview-warning-text" data-preview-warning-text></div>
+        <ul class="preview-warning-list" data-preview-warning-list hidden></ul>
+        <button type="button" class="small" data-preview-retry>Retry</button>
     </div>
     <div class="doc-preview-body" data-preview-body></div>
 </aside>

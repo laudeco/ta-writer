@@ -458,3 +458,12 @@ fieldset.object > legend > .collapse-toggle { margin-right: 4px; vertical-align:
 .item.is-collapsed { padding-bottom: 6px; }
 .item.is-collapsed > .item-bar { margin-bottom: 0; }
 .item.is-collapsed > :not(.item-bar), .collection.is-collapsed > :not(.collection-head), fieldset.object.is-collapsed > :not(legend) { display: none !important; }
+
+/* ---------- preview warnings ---------- */
+.preview-warning { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 12px 0; padding: 10px 12px; border: 1px solid var(--danger); border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--danger); font-size: 13px; }
+.preview-warning[hidden] { display: none; }
+.preview-warning-text { flex: 1; min-width: 0; font-weight: 600; }
+.preview-warning-list { flex-basis: 100%; margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-2); }
+.doc-preview-body.is-stale { opacity: .45; transition: opacity .15s; }
+.preview-dot { display: inline-block; width: 8px; height: 8px; margin-left: 6px; border-radius: 50%; background: var(--danger); vertical-align: middle; }
+.preview-dot[hidden] { display: none; }

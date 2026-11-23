@@ -14,6 +14,7 @@ use App\Ui\Form\SchemaFormBuilder;
 use App\Ui\Preview\PreviewDiagrams;
 use App\Ui\Preview\SectionScope;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +33,7 @@ final class PreviewController extends AbstractController
         private readonly MarkdownRenderer $renderer,
         private readonly ContentConverter $converter,
         private readonly MermaidRenderer $mermaid,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -46,19 +48,31 @@ final class PreviewController extends AbstractController
         $originalFormat = (string) $request->request->get('_format_original', 'markdown');
         $path = (string) $request->request->get('path', 'document');
 
-        $scoped = SectionScope::for($raw, $path);
-        if ($scoped === null) {
-            return new Response('<p class="muted">This section is not in the document any more.</p>', Response::HTTP_OK, ['Content-Type' => 'text/html; charset=UTF-8']);
-        }
+        try {
+            $scoped = SectionScope::for($raw, $path);
+            if ($scoped === null) {
+                return new Response('<p class="muted">This section is not in the document any more.</p>', Response::HTTP_OK, ['Content-Type' => 'text/html; charset=UTF-8']);
+            }
 
-        $document = $this->normalizer->normalize($scoped, $this->formBuilder->build(), $originalFormat);
-        $markdown = $this->renderer->render($this->builder->build($document));
-        if (!in_array($path, ['document', 'header'], true)) {
-            $markdown = $this->withoutHeader($markdown);
+            $document = $this->normalizer->normalize($scoped, $this->formBuilder->build(), $originalFormat);
+            $markdown = $this->renderer->render($this->builder->build($document));
+            if (!in_array($path, ['document', 'header'], true)) {
+                $markdown = $this->withoutHeader($markdown);
+            }
+            $html = PreviewDiagrams::placeholders($this->converter->toHtml($markdown, 'markdown'));
+        } catch (\Throwable $e) {
+            // the editor shows a warning and keeps the last preview: the trace goes to the log, not to the page
+            $this->logger->error('Preview could not be generated', ['path' => $path, 'exception' => $e]);
+
+            return new Response('Preview could not be generated: '.$this->firstLine($e->getMessage()), Response::HTTP_INTERNAL_SERVER_ERROR, ['Content-Type' => 'text/plain; charset=UTF-8', 'Cache-Control' => 'no-store']);
         }
-        $html = PreviewDiagrams::placeholders($this->converter->toHtml($markdown, 'markdown'));
 
         return new Response($html, Response::HTTP_OK, ['Content-Type' => 'text/html; charset=UTF-8', 'Cache-Control' => 'no-store']);
+    }
+
+    private function firstLine(string $message): string
+    {
+        return mb_substr(trim((string) strtok(trim($message), "\n")), 0, 200) ?: 'unknown error';
     }
 
     /**
