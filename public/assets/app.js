@@ -35,6 +35,9 @@
             if (window.TARichText) {
                 window.TARichText.initIn(item);
             }
+            if (window.TADiagram) {
+                window.TADiagram.initIn(item);
+            }
             renumber(collection.querySelector(':scope > [data-items]'));
             refreshCount(collection);
             var firstField = item.querySelector('input, textarea, select');

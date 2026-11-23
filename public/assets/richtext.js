@@ -36,6 +36,8 @@
         f.querySelector('[data-rich-mode]').value = 'html';
         f.querySelector('[data-rich-html]').value = quill.getSemanticHTML();
         f.classList.add('is-edited');
+        // the hidden fields changed: the form and the preview listen to input events like for any field
+        f.querySelector('[data-rich-html]').dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     function insertTable(quill) {

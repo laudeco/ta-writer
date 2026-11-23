@@ -4,6 +4,9 @@
 {% block scripts %}
 <script src="/assets/vendor/quill/quill.js" defer></script>
 <script src="/assets/richtext.js" defer></script>
+<script src="/assets/diagram.js" defer></script>
+<script src="/assets/docnav.js" defer></script>
+<script src="/assets/preview.js" defer></script>
 {% endblock %}
 {% block body %}
 <div class="doc-head">
@@ -23,6 +26,7 @@
         <a class="btn ghost" href="/documents/{{ id }}/versions">History</a>
         <a class="btn ghost" href="/documents/{{ id }}/publish">Publish</a>
         <a class="btn ghost" href="/api/documents/{{ id }}" target="_blank" rel="noopener">JSON</a>
+        <button type="button" class="ghost preview-toggle" data-preview-toggle aria-expanded="false">Preview</button>
     </div>
     {% endif %}
 </div>
@@ -36,6 +40,13 @@
     </div>
 {% endif %}
 
+<div class="editor-layout">
+<nav class="doc-nav" aria-label="Outline" data-docnav>
+    <div class="doc-nav-head">Outline</div>
+    <input type="search" class="doc-nav-filter" placeholder="Filter (/)" aria-label="Filter the outline" data-docnav-filter>
+    <div class="doc-nav-list" data-docnav-list></div>
+</nav>
+<div class="editor-main">
 <form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor">
     {% if id %}<input type="hidden" name="_version" value="{{ version }}">{% endif %}
     {# the format the stored values are written in: the rich fields convert from it when the format changes #}
@@ -48,4 +59,19 @@
         <button type="submit" class="primary">{{ id ? 'Save changes' : 'Create analysis' }}</button>
     </div>
 </form>
+</div>
+<aside class="doc-preview" aria-label="Preview" data-preview>
+    <div class="doc-preview-head">
+        <strong>Preview</strong>
+        <span class="doc-preview-status" data-preview-status aria-live="polite"></span>
+        <div class="seg" role="group" aria-label="Preview scope">
+            <button type="button" class="small" data-preview-mode="section" aria-pressed="true">Section</button>
+            <button type="button" class="small" data-preview-mode="document" aria-pressed="false">Document</button>
+        </div>
+        <button type="button" class="ghost small preview-close" data-preview-close>Close</button>
+    </div>
+    <div class="doc-preview-body" data-preview-body></div>
+</aside>
+</div>
+{% include 'ui/editor/_diagram_modal.html.twig' %}
 {% endblock %}

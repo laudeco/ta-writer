@@ -1,0 +1,49 @@
+{# One modal for every diagram: View (read-only render, zoom, code on demand) and Edit (code editor + live render). Filled by diagram.js. #}
+<dialog id="diagram-dialog" class="diagram-dialog" aria-labelledby="diagram-dialog-title">
+    <div class="dd-head">
+        <div class="dd-title">
+            <strong id="diagram-dialog-title" data-dd-title>Diagram</strong>
+            <span class="pill" data-dd-mode>View</span>
+        </div>
+        <div class="dd-zoom" role="group" aria-label="Zoom">
+            <button type="button" class="ghost small" data-zoom="out" title="Zoom out (-)">&minus;</button>
+            <span class="dd-level" data-dd-zoom-level>100%</span>
+            <button type="button" class="ghost small" data-zoom="in" title="Zoom in (+)">+</button>
+            <button type="button" class="ghost small" data-zoom="fit" title="Fit (0)">Fit</button>
+            <button type="button" class="ghost small" data-zoom="reset" title="100% (1)">100%</button>
+        </div>
+        <div class="dd-actions">
+            <button type="button" class="ghost small" data-dd-code aria-pressed="false" title="Show the code (c)">Code</button>
+            <button type="button" class="ghost small" data-dd-edit title="Edit (e)">Edit</button>
+            <button type="button" class="ghost small" data-dd-close title="Close (Esc)">Close</button>
+        </div>
+    </div>
+    <div class="dd-body">
+        <div class="dd-stage" data-dd-stage>
+            <div class="dd-canvas" data-dd-canvas></div>
+        </div>
+        <aside class="dd-code" hidden>
+            <div class="dd-code-tools">
+                <select data-dd-template hidden aria-label="Start from an example">
+                    <option value="">Start from an example…</option>
+                    <option value="flowchart">Flowchart</option>
+                    <option value="sequence">Sequence</option>
+                    <option value="class">Class</option>
+                    <option value="state">State</option>
+                    <option value="er">Entity-relationship</option>
+                </select>
+                <button type="button" class="ghost small" data-dd-copy>Copy</button>
+            </div>
+            <pre class="dd-readonly" data-dd-readonly></pre>
+            <div class="dd-editor" data-dd-editor hidden>
+                <textarea data-dd-input class="code" spellcheck="false" rows="18" aria-label="Diagram source"></textarea>
+                <div class="dd-error" data-dd-error role="alert" hidden></div>
+            </div>
+        </aside>
+    </div>
+    <div class="dd-foot">
+        <span class="hint">Zoom: Ctrl + wheel, or the buttons. Drag to pan. Double-click to fit.</span>
+        <button type="button" class="ghost" data-dd-cancel hidden>Cancel</button>
+        <button type="button" class="primary" data-dd-apply hidden>Apply</button>
+    </div>
+</dialog>

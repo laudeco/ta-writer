@@ -330,3 +330,108 @@ pre.json {
 .format-notice strong { color: var(--primary); }
 .plain-fallback { width: 100%; font: inherit; padding: 8px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
 .rich-editor[data-rich-editor] { min-height: 96px; }
+
+/* ---------- diagrams ---------- */
+.diagram-card { border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-2); padding: 10px; display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.diagram-thumb { height: 120px; overflow: hidden; display: grid; place-items: center; background: var(--surface); border-radius: 6px; border: 1px dashed var(--border); cursor: zoom-in; }
+.diagram-thumb svg { max-width: 100%; max-height: 100%; width: auto; height: auto; }
+.diagram-meta { min-width: 0; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.diagram-first { font-size: 12.5px; color: var(--text-2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.diagram-actions { display: flex; gap: 6px; }
+.diagram-field.is-edited .diagram-card { border-color: var(--primary); }
+.diagram-error { color: var(--danger); font-size: 13px; }
+.diagram-dialog { width: min(1400px, 96vw); height: min(900px, 92vh); max-width: none; max-height: none; padding: 0; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: 0 30px 80px -20px rgba(15, 23, 42, .5); display: flex; flex-direction: column; }
+.diagram-dialog[open] { display: flex; }
+.diagram-dialog::backdrop { background: rgba(15, 23, 42, .55); }
+.dd-head { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.dd-title { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.dd-title strong { font-size: 15px; }
+.dd-zoom, .dd-actions { display: flex; align-items: center; gap: 4px; }
+.dd-level { min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.dd-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+.diagram-dialog .dd-body:has(.dd-code:not([hidden])) { grid-template-columns: minmax(0, 1fr) minmax(320px, 40%); }
+.dd-stage { position: relative; overflow: hidden; min-height: 0; background-image: radial-gradient(var(--border) 1px, transparent 1px); background-size: 18px 18px; cursor: grab; touch-action: none; }
+.dd-stage.is-dragging { cursor: grabbing; }
+.dd-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: opacity .15s; }
+.dd-canvas.is-stale { opacity: .45; }
+.dd-canvas svg { display: block; }
+.dd-code { border-left: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; background: var(--surface-2); }
+.dd-code-tools { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.dd-code-tools select { flex: 1; min-width: 0; }
+.dd-readonly { margin: 0; padding: 12px; overflow: auto; flex: 1; font-size: 12.5px; white-space: pre; }
+.dd-editor { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.dd-editor textarea { flex: 1; min-height: 0; border: 0; border-radius: 0; resize: none; padding: 12px; }
+.dd-error { white-space: pre-wrap; font-size: 12.5px; color: var(--danger); padding: 8px 12px; border-top: 1px solid var(--border); background: var(--danger-soft); }
+.dd-foot { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); }
+.dd-foot .hint { flex: 1; color: var(--muted); font-size: 12.5px; }
+@media (max-width: 760px) {
+    .diagram-card { grid-template-columns: 1fr; }
+    .diagram-dialog .dd-body:has(.dd-code:not([hidden])) { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    .dd-code { border-left: 0; border-top: 1px solid var(--border); }
+}
+
+/* the hidden attribute always wins over the display rules of the components */
+[hidden] { display: none !important; }
+
+/* ---------- editor layout: outline on the left ---------- */
+.editor-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr) minmax(340px, 40%); gap: 24px; align-items: start; }
+.editor-main { min-width: 0; }
+.doc-nav { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); padding: 12px 10px; }
+.doc-nav-head { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 0 6px 8px; }
+.doc-nav-filter { width: 100%; margin-bottom: 8px; padding: 6px 9px; font-size: 13px; }
+.doc-nav-list ol { list-style: none; margin: 0; padding: 0; }
+.doc-nav-list ol ol { padding-left: 12px; border-left: 1px solid var(--border); margin-left: 9px; }
+.doc-nav-list li { margin: 1px 0; }
+.doc-nav-list a { display: block; padding: 4px 8px; border-radius: 6px; color: var(--text-2); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+.doc-nav-list li.level-0 > a { font-weight: 700; color: var(--text); }
+.doc-nav-list li.level-1 > a { font-weight: 600; }
+.doc-nav-list li.level-3 > a { font-size: 12.5px; color: var(--muted); }
+.doc-nav-list a:hover { background: var(--surface-2); text-decoration: none; color: var(--text); }
+.doc-nav-list a[aria-current="true"] { background: var(--primary-soft); color: var(--primary); box-shadow: inset 3px 0 0 var(--primary); }
+[data-item], fieldset.object { scroll-margin-top: 84px; }
+/* preview on the right: a column while there is room, a drawer below 1280px */
+.doc-preview { position: sticky; top: 76px; max-height: calc(100vh - 96px); display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); min-width: 0; }
+.doc-preview-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.doc-preview-head strong { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.doc-preview-status { flex: 1; font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.doc-preview-body { overflow: auto; padding: 16px 18px 28px; line-height: 1.55; font-size: 14px; color: var(--text-2); min-height: 0; }
+.doc-preview-body h1, .doc-preview-body h2, .doc-preview-body h3, .doc-preview-body h4 { color: var(--text); line-height: 1.25; margin: 1.1em 0 .4em; }
+.doc-preview-body h1 { font-size: 20px; } .doc-preview-body h2 { font-size: 17px; } .doc-preview-body h3 { font-size: 15px; } .doc-preview-body h4 { font-size: 14px; }
+.doc-preview-body p { margin: .5em 0; }
+.doc-preview-body pre { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow: auto; font-size: 12.5px; }
+.doc-preview-body table { border-collapse: collapse; width: 100%; font-size: 13px; margin: .6em 0; }
+.doc-preview-body th, .doc-preview-body td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; vertical-align: top; }
+.doc-preview-body th { background: var(--surface-2); }
+.preview-diagram { margin: .8em 0; padding: 10px; border: 1px dashed var(--border-strong); border-radius: 8px; background: var(--surface-2); cursor: zoom-in; text-align: center; overflow: auto; }
+.preview-diagram svg { max-width: 100%; height: auto; }
+.seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: transparent; }
+.seg button[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); }
+.preview-toggle { display: none; }
+.preview-close { display: none; }
+@media (max-width: 1280px) {
+    .editor-layout { grid-template-columns: 260px minmax(0, 1fr); }
+    .doc-preview { position: fixed; top: 60px; right: 0; bottom: 0; width: min(560px, 94vw); max-height: none; z-index: 30; border-radius: 0; transform: translateX(105%); transition: transform .2s ease; }
+    .doc-preview.is-open { transform: none; }
+    .preview-toggle { display: inline-flex; }
+    .preview-close { display: inline-flex; }
+}
+@media (max-width: 1100px) {
+    .editor-layout { grid-template-columns: minmax(0, 1fr); }
+    .doc-nav { position: static; max-height: 36vh; }
+    .doc-preview { width: 100vw; }
+}
+
+/* narrow screens: the bar wraps, and the nested lists lose some of their padding */
+@media (max-width: 760px) {
+    .topbar { flex-wrap: wrap; height: auto; padding: 10px 16px; row-gap: 6px; }
+    .topnav { flex-wrap: wrap; }
+    .topnav-end { margin-left: 0; }
+    .collection { padding: 10px; }
+    .item { padding: 10px 10px 2px; }
+    .doc-head { flex-wrap: wrap; }
+    .doc-nav { display: none; }
+}
+/* the add buttons of the lists never widen the column */
+.collection, .items, .item { min-width: 0; }
+button.add { max-width: 100%; white-space: normal; text-align: left; }
