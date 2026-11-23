@@ -1,0 +1,56 @@
+# Paths are relative to the project root: TA_STORAGE_DIR=data/analyses -> <project>/data/analyses
+parameters:
+    app.storage_dir: '%kernel.project_dir%/%env(TA_STORAGE_DIR)%'
+    app.export_dir: '%kernel.project_dir%/%env(TA_EXPORT_DIR)%'
+    app.history_max: '%env(int:TA_HISTORY_MAX)%'
+    app.schema_path: '%kernel.project_dir%/config/schema/document.openapi.yaml'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    _instanceof:
+        App\Validation\RuleInterface:
+            tags: ['app.validation_rule']
+        App\Publication\PublisherInterface:
+            tags: ['app.publisher']
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            - '../src/Storage/StoredDocument.php'
+            - '../src/Storage/History/VersionMeta.php'
+            - '../src/Validation/Violation.php'
+            - '../src/Publication/OptionDefinition.php'
+            - '../src/Publication/PublishRequest.php'
+            - '../src/Publication/PublishResult.php'
+            - '../src/Publication/ExportPath.php'
+
+    App\Storage\TaRepositoryInterface: '@App\Storage\JsonFileTaRepository'
+
+    App\Storage\JsonFileTaRepository:
+        arguments:
+            $storageDir: '%app.storage_dir%'
+
+    App\Storage\History\VersionStore:
+        arguments:
+            $historyMax: '%app.history_max%'
+
+    App\Schema\SchemaProvider:
+        arguments:
+            $schemaPath: '%app.schema_path%'
+
+    App\Api\Controller\SchemaController:
+        arguments:
+            $schemaPath: '%app.schema_path%'
+
+    App\Publication\Adapter\JsonPublisher:
+        arguments:
+            $exportDir: '%app.export_dir%'
+
+    App\Publication\Adapter\MarkdownPublisher:
+        arguments:
+            $exportDir: '%app.export_dir%'

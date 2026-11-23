@@ -5,6 +5,13 @@
 ## Context
 Technical analyses (TA) are written as Markdown by the `technical-analysis-writer` skill and published to Jira and Confluence by Python scripts that parse that Markdown (`technical-analysis-agir-writer`). There is no standard intermediate format. `ta-writer` is a local Symfony + PHP + Docker tool whose source of truth is a **JSON document** (structure given as an OpenAPI 3.1 file) stored in the project, built through a schema-driven UI or injected through a complete REST API, then published in several formats through extensible adapters (raw JSON, Markdown, PDF, Confluence API, Confluence AGIR). The tool contains no AI and does not analyse code.
 
+## Implementation decisions taken while building (2026-11-23)
+- **Symfony 6.4 LTS, not 6.3**: every 6.3 release is blocked by security advisories in the PHP tooling. 6.4 supports PHP 8.1 but reaches end of maintenance in 11/2026 (security fixes until 11/2027); moving to Symfony 7.4 LTS needs PHP 8.2 in the image.
+- **No Flex**: the composer container cannot reach GitHub, so the dependencies are declared by hand and the kernel, console and front controller are written without recipes.
+- **PHP 8.1 syntax**: `final readonly class` (PHP 8.2) is written as `final class` with `public readonly` promoted properties. Wherever this TA says `final readonly`, read `final` + `readonly` properties.
+- **Dev serving**: `php -S` in the PHP container on `127.0.0.1:8080` instead of nginx; no MongoDB, no Node in this stage.
+- **Document ids** are `<YYYYMMDD>_<slug>`; the slug comes from the project reference alone, collisions get `-2`, `-3`.
+
 ## Scope
 - In scope:
   - JSON storage in the project (`data/analyses`), with a full version history, restore, and diff.

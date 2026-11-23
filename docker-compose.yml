@@ -1,0 +1,14 @@
+services:
+    php:
+        build:
+            context: ./docker/php
+        working_dir: /app
+        user: "${USERID:-1000}:${GROUPID:-1000}"
+        environment:
+            COMPOSER_HOME: /tmp/composer
+        volumes:
+            - .:/app
+        ports:
+            # local only: the API has no authentication
+            - "127.0.0.1:8080:8080"
+        command: php -S 0.0.0.0:8080 -t public

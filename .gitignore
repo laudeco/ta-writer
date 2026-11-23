@@ -1,5 +1,7 @@
 /vendor/
 /var/
 /data/
+/.phpunit.cache/
 .env.local
 .idea/
+.phpunit.result.cache
