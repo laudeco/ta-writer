@@ -4,6 +4,9 @@ parameters:
     app.export_dir: '%kernel.project_dir%/%env(TA_EXPORT_DIR)%'
     app.history_max: '%env(int:TA_HISTORY_MAX)%'
     app.schema_path: '%kernel.project_dir%/config/schema/document.openapi.yaml'
+    app.profile_dir: '%kernel.project_dir%/%env(AGIR_PROFILE_DIR)%'
+    app.mermaid_cache: '%kernel.project_dir%/var/mermaid'
+    app.pdf_temp: '%kernel.project_dir%/var/mpdf'
 
 services:
     _defaults:
@@ -21,6 +24,7 @@ services:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
+            # value objects and exceptions: created by hand, not services
             - '../src/Storage/StoredDocument.php'
             - '../src/Storage/History/VersionMeta.php'
             - '../src/Validation/Violation.php'
@@ -28,12 +32,41 @@ services:
             - '../src/Publication/PublishRequest.php'
             - '../src/Publication/PublishResult.php'
             - '../src/Publication/ExportPath.php'
+            - '../src/Ui/Form/FieldNode.php'
+            - '../src/Render/Mermaid/MermaidRenderException.php'
+            # built per run from the options of the publication (they need a base URL and a token)
+            - '../src/Publication/Confluence/ConfluencePagePublisher.php'
+            - '../src/Publication/Confluence/HttpConfluenceClient.php'
+            - '../src/Publication/Confluence/BrowserConfluenceClient.php'
+            - '../src/Publication/Confluence/PageSpec.php'
+            - '../src/Publication/Confluence/PageResult.php'
+            - '../src/Publication/Confluence/ConfluenceResponse.php'
+            - '../src/Publication/Confluence/ConfluenceClientInterface.php'
+            - '../src/Publication/Confluence/ConfluenceAuthNotSupportedException.php'
+            - '../src/Publication/Confluence/ConfluenceTitleCollisionException.php'
+            - '../src/Publication/Agir/ReferencePageCloner.php'
+            - '../src/Jira/JiraClient.php'
+            - '../src/Jira/JiraSyncOptions.php'
+            - '../src/Jira/JiraTicketSynchronizer.php'
+            - '../src/Browser/AgirAuthenticator.php'
+            - '../src/Browser/NotAuthenticatedException.php'
 
     App\Storage\TaRepositoryInterface: '@App\Storage\JsonFileTaRepository'
+    App\Browser\BrowserSessionInterface: '@App\Browser\ChromeSession'
 
+    App\Browser\ChromeSession:
+        arguments:
+            $profileDir: '%app.profile_dir%'
+            $chromeBinary: '%env(CHROME_BIN)%'
+
+    # public: the integration tests fetch these from the kernel container
     App\Storage\JsonFileTaRepository:
+        public: true
         arguments:
             $storageDir: '%app.storage_dir%'
+
+    App\Publication\PublicationService:
+        public: true
 
     App\Storage\History\VersionStore:
         arguments:
@@ -47,6 +80,12 @@ services:
         arguments:
             $schemaPath: '%app.schema_path%'
 
+    App\Render\Mermaid\MermaidRenderer:
+        arguments:
+            $cacheDir: '%app.mermaid_cache%'
+            $mmdcBin: '%env(MMDC_BIN)%'
+            $puppeteerConfig: '%env(default::MMDC_PUPPETEER_CONFIG)%'
+
     App\Publication\Adapter\JsonPublisher:
         arguments:
             $exportDir: '%app.export_dir%'
@@ -54,3 +93,20 @@ services:
     App\Publication\Adapter\MarkdownPublisher:
         arguments:
             $exportDir: '%app.export_dir%'
+
+    App\Publication\Adapter\PdfPublisher:
+        arguments:
+            $exportDir: '%app.export_dir%'
+            $projectDir: '%kernel.project_dir%'
+            $tempDir: '%app.pdf_temp%'
+
+    App\Publication\Adapter\ConfluenceApiPublisher:
+        arguments:
+            $confluenceBaseUrl: '%env(CONFLUENCE_BASE_URL)%'
+            $confluenceToken: '%env(default::CONFLUENCE_PAT)%'
+
+    App\Publication\Adapter\AgirPublisher:
+        arguments:
+            $confluenceOrigin: '%env(CONFLUENCE_BASE_URL)%'
+            $jiraBaseUrl: '%env(JIRA_BASE_URL)%'
+            $jiraToken: '%env(default::JIRA_PAT)%'

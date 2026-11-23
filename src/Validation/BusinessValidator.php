@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Validation;
 
-use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
 final class BusinessValidator
 {
@@ -12,7 +12,7 @@ final class BusinessValidator
      * @param iterable<RuleInterface> $rules
      */
     public function __construct(
-        #[TaggedIterator('app.validation_rule')] private readonly iterable $rules,
+        #[AutowireIterator('app.validation_rule')] private readonly iterable $rules,
     ) {
     }
 
@@ -41,7 +41,7 @@ final class BusinessValidator
         $violations = $this->validate($document);
         $errors = array_filter($violations, static fn (Violation $v): bool => $v->severity === 'error');
         if ($errors !== []) {
-            throw new BusinessValidationException(array_values($violations));
+            throw new BusinessValidationException($violations);
         }
     }
 }

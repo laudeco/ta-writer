@@ -6,9 +6,11 @@ services:
         user: "${USERID:-1000}:${GROUPID:-1000}"
         environment:
             COMPOSER_HOME: /tmp/composer
+            HOME: /tmp
         volumes:
             - .:/app
         ports:
-            # local only: the API has no authentication
+            # local only: the API has no authentication, and the noVNC session shows a logged-in AGIR browser
             - "127.0.0.1:8080:8080"
+            - "127.0.0.1:6080:6080"
         command: php -S 0.0.0.0:8080 -t public

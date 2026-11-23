@@ -7,7 +7,7 @@ namespace App\Schema;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Single source of truth: the OpenAPI file. Parsed once per modification time of the file.
+ * Single source of truth: the OpenAPI file. Parsed again whenever its modification time changes.
  */
 final class SchemaProvider
 {
@@ -37,23 +37,50 @@ final class SchemaProvider
     }
 
     /**
-     * The Document schema with every `#/components/schemas/<Name>` reference inlined (plain JSON Schema).
-     */
-    /**
+     * The Document schema with every `#/components/schemas/<Name>` reference inlined, as plain JSON Schema (no `x-` keys).
+     *
      * @return array<string, mixed>
      */
     public function getDocumentJsonSchema(): array
     {
+        return $this->stripExtensions($this->getDocumentFormSchema());
+    }
+
+    /**
+     * Same schema with the `x-` extensions kept (x-widget, read by the form builder).
+     *
+     * @return array<string, mixed>
+     */
+    public function getDocumentFormSchema(): array
+    {
         $schemas = $this->getOpenApi()['components']['schemas'] ?? [];
 
-        return $this->inline($schemas['Document'] ?? throw new \RuntimeException('No Document schema'), $schemas, []);
+        return $this->inline($schemas['Document'] ?? throw new \RuntimeException('No Document schema'), $schemas, [], true);
+    }
+
+    /**
+     * @param array<string, mixed> $node
+     *
+     * @return array<string, mixed>
+     */
+    private function stripExtensions(array $node): array
+    {
+        $out = [];
+        foreach ($node as $key => $value) {
+            if (str_starts_with((string) $key, 'x-')) {
+                continue;
+            }
+            $out[$key] = \is_array($value) ? $this->stripExtensions($value) : $value;
+        }
+
+        return $out;
     }
 
     /**
      * @param array<string, mixed> $schemas
-     * @param list<string>         $stack   names currently being inlined, to detect cycles
+     * @param list<string>         $stack      names currently being inlined, to detect cycles
      */
-    private function inline(mixed $node, array $schemas, array $stack): mixed
+    private function inline(mixed $node, array $schemas, array $stack, bool $keepExtensions): mixed
     {
         if (\is_array($node)) {
             if (isset($node['$ref'])) {
@@ -65,15 +92,14 @@ final class SchemaProvider
                     throw new \LogicException(sprintf('Unknown schema reference %s', $name));
                 }
 
-                return $this->inline($schemas[$name], $schemas, [...$stack, $name]);
+                return $this->inline($schemas[$name], $schemas, [...$stack, $name], $keepExtensions);
             }
             $out = [];
             foreach ($node as $key => $value) {
-                // vendor extensions are for the form builder only
-                if (str_starts_with((string) $key, 'x-')) {
+                if (!$keepExtensions && str_starts_with((string) $key, 'x-')) {
                     continue;
                 }
-                $out[$key] = $this->inline($value, $schemas, $stack);
+                $out[$key] = $this->inline($value, $schemas, $stack, $keepExtensions);
             }
 
             return $out;

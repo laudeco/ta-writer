@@ -18,10 +18,10 @@ The full specification is in [`docs/ta-writer-json-ta-tool.md`](docs/ta-writer-j
 | Business rules (unique references, dependency cycles, criteria coverage) | done |
 | Publication: raw JSON (+ JSON Schema), Markdown | done |
 | Publication: command `app:ta:publish` | done (no interactive questions yet, use `--option`) |
-| Schema-driven web UI | not done |
-| PDF (mPDF, mermaid rendered to PNG) | not done |
-| Confluence API (page tree) | not done |
-| Confluence AGIR (browser session driven by PHP, Jira tickets) | not done |
+| Schema-driven web UI (form generated from the OpenAPI file, versions, restore, publication) | done |
+| PDF (mPDF, mermaid rendered to PNG by mermaid-cli) | done |
+| Confluence API (page tree, Personal Access Token) | done (live instance not verified, see below) |
+| Confluence AGIR (Chrome driven by PHP, Jira tickets, pages, Blocks links) | done (live instance not verified, see below) |
 
 ## Requirements
 
@@ -53,6 +53,8 @@ docker compose down     # stops the stack
 | `make composer-install` | Install the dependencies (`vendor/`, not committed) |
 | `make up` | Start in the background (`docker compose up -d`) |
 | `make start` | Start in the foreground, logs in the terminal |
+| `make down` | Stop the stack |
+| `make login-browser` | Open the browser used for the AGIR login, through noVNC |
 | `make console c="about"` | Run any Symfony console command |
 | `make publish d=20261123_ta-writer f=markdown` | Publish a stored analysis |
 | `make test` | Run the PHPUnit suite |
@@ -69,6 +71,13 @@ project root.
 | `TA_STORAGE_DIR` | `data/analyses` | Where the analyses are stored |
 | `TA_EXPORT_DIR` | `data/exports` | Where the publications are written by default |
 | `TA_HISTORY_MAX` | `0` | Versions kept per analysis, `0` = all |
+| `MMDC_BIN` | `mmdc` | mermaid-cli, used for the diagrams of the PDF and of the Confluence pages |
+| `CHROME_BIN` | `/usr/bin/chromium` | Chrome driven for the AGIR publication |
+| `AGIR_PROFILE_DIR` | `data/chrome-profile` | Browser profile that keeps the AGIR login between runs |
+| `CONFLUENCE_BASE_URL` | `https://espace.agir.orange.com` | Confluence instance |
+| `JIRA_BASE_URL` | `https://portail.agir.orange.com` | Jira instance |
+| `CONFLUENCE_PAT` | empty | Confluence Personal Access Token, in `.env.local` only |
+| `JIRA_PAT` | empty | Jira Personal Access Token, in `.env.local` only |
 | `APP_SECRET` | placeholder | Symfony secret. Change it outside your local machine |
 
 `data/` is gitignored: analyses and exports are local.

@@ -1,5 +1,11 @@
-controllers:
+api:
     resource:
         path: ../src/Api/Controller/
         namespace: App\Api\Controller
+    type: attribute
+
+ui:
+    resource:
+        path: ../src/Ui/Controller/
+        namespace: App\Ui\Controller
     type: attribute

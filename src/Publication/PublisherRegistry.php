@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Publication;
 
-use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
 final class PublisherRegistry
 {
@@ -14,7 +14,7 @@ final class PublisherRegistry
     /**
      * @param iterable<PublisherInterface> $publishers
      */
-    public function __construct(#[TaggedIterator('app.publisher')] iterable $publishers)
+    public function __construct(#[AutowireIterator('app.publisher')] iterable $publishers)
     {
         foreach ($publishers as $publisher) {
             $this->publishers[$publisher->getName()] = $publisher;

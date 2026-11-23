@@ -2,12 +2,12 @@ USERID=$(shell id -u)
 GROUPID=$(shell id -g)
 RUN=USERID=$(USERID) GROUPID=$(GROUPID) docker compose run --rm php
 
-.PHONY: help build up start console composer-install test stan sh publish
+.PHONY: help build up start down console composer-install test stan sh publish login-browser
 
 help: ## Shows the available commands
 	@cat $(MAKEFILE_LIST) | grep -e "^[a-zA-Z_\-]*: *.*## *" | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-build: ## Builds the PHP image (PHP 8.1, intl, zip, mbstring, dom, xml)
+build: ## Builds the PHP 8.4 image (intl, zip, mbstring, dom, xml, gd, mermaid-cli, Chromium)
 	docker compose build
 
 composer-install: ## Installs the PHP dependencies (vendor/ is not committed)
@@ -15,6 +15,9 @@ composer-install: ## Installs the PHP dependencies (vendor/ is not committed)
 
 up: ## Starts the application in the background (API and UI on http://127.0.0.1:8080)
 	USERID=$(USERID) GROUPID=$(GROUPID) docker compose up -d
+
+down: ## Stops the stack
+	docker compose down
 
 start: ## Starts the application in the foreground (logs in the terminal)
 	USERID=$(USERID) GROUPID=$(GROUPID) docker compose up
@@ -30,6 +33,10 @@ stan: ## Runs PHPStan (level 6)
 
 publish: ## Publishes a stored analysis. Usage: make publish d=20261123_ta-writer f=markdown
 	$(RUN) php bin/console app:ta:publish $(d) --format=$(f)
+
+login-browser: ## Shows the browser used for the AGIR login, through noVNC (http://127.0.0.1:6080/vnc.html)
+	docker compose exec -d php novnc.sh
+	@echo "Open http://127.0.0.1:6080/vnc.html, start 'make publish' for agir from the UI, and log in when asked."
 
 sh: ## Opens a shell in the PHP container
 	$(RUN) sh

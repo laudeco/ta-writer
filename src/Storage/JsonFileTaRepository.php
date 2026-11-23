@@ -87,7 +87,7 @@ final class JsonFileTaRepository implements TaRepositoryInterface
         return new StoredDocument(
             $id,
             $data,
-            $meta?->number ?? $current,
+            $meta !== null ? $meta->number : $current,
             new \DateTimeImmutable('now'),
         );
     }

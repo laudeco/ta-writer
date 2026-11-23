@@ -4,3 +4,7 @@ framework:
         log: true
     http_method_override: false
     handle_all_throwables: true
+    # flash messages of the UI; local, single-user tool
+    session:
+        cookie_samesite: lax
+        cookie_secure: auto

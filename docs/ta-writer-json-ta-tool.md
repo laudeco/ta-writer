@@ -6,11 +6,15 @@
 Technical analyses (TA) are written as Markdown by the `technical-analysis-writer` skill and published to Jira and Confluence by Python scripts that parse that Markdown (`technical-analysis-agir-writer`). There is no standard intermediate format. `ta-writer` is a local Symfony + PHP + Docker tool whose source of truth is a **JSON document** (structure given as an OpenAPI 3.1 file) stored in the project, built through a schema-driven UI or injected through a complete REST API, then published in several formats through extensible adapters (raw JSON, Markdown, PDF, Confluence API, Confluence AGIR). The tool contains no AI and does not analyse code.
 
 ## Implementation decisions taken while building (2026-11-23)
-- **Symfony 6.4 LTS, not 6.3**: every 6.3 release is blocked by security advisories in the PHP tooling. 6.4 supports PHP 8.1 but reaches end of maintenance in 11/2026 (security fixes until 11/2027); moving to Symfony 7.4 LTS needs PHP 8.2 in the image.
-- **No Flex**: the composer container cannot reach GitHub, so the dependencies are declared by hand and the kernel, console and front controller are written without recipes.
-- **PHP 8.1 syntax**: `final readonly class` (PHP 8.2) is written as `final class` with `public readonly` promoted properties. Wherever this TA says `final readonly`, read `final` + `readonly` properties.
-- **Dev serving**: `php -S` in the PHP container on `127.0.0.1:8080` instead of nginx; no MongoDB, no Node in this stage.
+- **Symfony 8.1 (latest stable), PHP 8.4**: Symfony 8.1 requires PHP 8.4.1; the image is `php:8.4-cli`. The earlier 6.3 and 6.4 choices were superseded on request ("dernière version de symfony").
+- **No Flex**: the composer container cannot reach GitHub, so the Symfony components are declared by hand; the kernel, console and front controller are written without recipes.
+- **PHP syntax**: `final readonly class` is not used; classes are `final` with `public readonly` properties, so the code also runs on older 8.x patch levels.
+- **UI without AssetMapper or Stimulus**: the form is generated on the server from the OpenAPI schema (`SchemaFormBuilder` -> `FieldNode` tree -> recursive Twig templates) and a small vanilla script handles the repeatable lists. Same behaviour, no Node build step.
+- **One rendering model** (`DocumentModelBuilder`) for the Markdown, the PDF and the Confluence pages: titles carry the reference, calculated sections (criteria coverage, SQL impact, dependencies) are computed once.
+- **Dev serving**: `php -S` in the PHP container on `127.0.0.1:8080`; noVNC on `127.0.0.1:6080` for the AGIR login. No nginx, no MongoDB.
 - **Document ids** are `<YYYYMMDD>_<slug>`; the slug comes from the project reference alone, collisions get `-2`, `-3`.
+- **AGIR epic and technical-story pages** start from the reference pages of the AGIR skill (`3398621794`, `3399544715`), whose details cells are replaced by label. Reading the CFDITS templates directly (storage body) is not implemented: the reference pages are the proven source; the template ids are kept as documentation.
+- **Writes are batched**: Confluence and AGIR runs write their links back into the JSON in one new version at the end, even when the run stopped halfway; pages already written keep their link.
 
 ## Scope
 - In scope:
