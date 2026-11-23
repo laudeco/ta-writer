@@ -6,6 +6,7 @@
     <meta name="color-scheme" content="light dark">
     <title>{% block title %}TA Writer{% endblock %}</title>
     <link rel="stylesheet" href="/assets/app.css">
+    {% block head %}{% endblock %}
 </head>
 <body>
 <header class="topbar">
@@ -25,5 +26,6 @@
     {% block body %}{% endblock %}
 </main>
 <script src="/assets/app.js" defer></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

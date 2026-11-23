@@ -61,6 +61,30 @@ final class DocumentVersion
     {
         $ignored = ['version', 'structureVersion'];
 
-        return array_diff_key($a, array_flip($ignored)) == array_diff_key($b, array_flip($ignored));
+        return self::withoutEmptyLists(array_diff_key($a, array_flip($ignored)))
+            == self::withoutEmptyLists(array_diff_key($b, array_flip($ignored)));
+    }
+
+    /**
+     * An empty optional list carries no content: a save that only adds one is not an edit.
+     *
+     * @param array<array-key, mixed> $value
+     *
+     * @return array<array-key, mixed>
+     */
+    private static function withoutEmptyLists(array $value): array
+    {
+        $out = [];
+        foreach ($value as $key => $item) {
+            if (\is_array($item)) {
+                $item = self::withoutEmptyLists($item);
+                if ($item === []) {
+                    continue;
+                }
+            }
+            $out[$key] = $item;
+        }
+
+        return $out;
     }
 }

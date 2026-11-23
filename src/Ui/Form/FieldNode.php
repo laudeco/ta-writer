@@ -10,7 +10,7 @@ namespace App\Ui\Form;
 final class FieldNode
 {
     /**
-     * @param 'object'|'array'|'text'|'textarea'|'code'|'url'|'email'|'integer'|'select' $widget
+     * @param 'object'|'array'|'text'|'textarea'|'richtext'|'code'|'url'|'email'|'integer'|'select' $widget
      * @param list<string>                                                              $options  enum values for a select
      * @param list<FieldNode>                                                           $children object properties, in schema order
      */
@@ -24,6 +24,8 @@ final class FieldNode
         public readonly array $children = [],
         public readonly ?FieldNode $item = null,
         public readonly bool $readOnly = false,
+        /** @var array{field: string, equals: string}|null shows the rich editor only when a sibling field has this value */
+        public readonly ?array $richWhen = null,
     ) {
     }
 

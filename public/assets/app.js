@@ -32,6 +32,9 @@
             holder.innerHTML = html;
             var item = holder.firstElementChild;
             collection.querySelector(':scope > [data-items]').appendChild(item);
+            if (window.TARichText) {
+                window.TARichText.initIn(item);
+            }
             renumber(collection.querySelector(':scope > [data-items]'));
             refreshCount(collection);
             var firstField = item.querySelector('input, textarea, select');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Ui;
 
+use App\Render\ContentConverter;
 use App\Schema\SchemaProvider;
 use App\Ui\Form\FieldNode;
 use App\Ui\Form\FormDataNormalizer;
@@ -32,7 +33,7 @@ final class SchemaFormTest extends TestCase
         self::assertSame(['html', 'text', 'markdown'], $this->child($root, 'format')->options);
         self::assertSame('url', $this->child($root, 'dependenciesPageLink')->widget);
         $epic = $this->child($root, 'epics')->item;
-        self::assertSame('textarea', $this->child($epic, 'what')->widget);
+        self::assertSame('richtext', $this->child($epic, 'what')->widget, 'long text fields are Quill editors');
         self::assertSame('integer', $this->child($this->child($this->child($this->child($epic, 'technicalStories')->item, 'subtasks')->item, 'sqlImpact'), 'nbRows')->widget);
     }
 
@@ -65,7 +66,7 @@ final class SchemaFormTest extends TestCase
             ],
             'dependencies' => [['from' => '', 'to' => '']],
         ];
-        $out = (new FormDataNormalizer())->normalize($submitted, $root);
+        $out = (new FormDataNormalizer(new ContentConverter()))->normalize($submitted, $root, 'markdown');
 
         self::assertSame('Demo', $out['project']['name']);
         self::assertArrayNotHasKey('username', $out['author']);
@@ -81,7 +82,7 @@ final class SchemaFormTest extends TestCase
         $root = (new SchemaFormBuilder(new SchemaProvider(self::SCHEMA)))->build();
         $sub = ['title' => 's', 'sqlImpact' => ['nbColumns' => '3', 'nbRows' => ' 12 ']];
         $submitted = ['epics' => [['title' => 'e', 'technicalStories' => [['title' => 't', 'subtasks' => [$sub]]]]]];
-        $out = (new FormDataNormalizer())->normalize($submitted, $root);
+        $out = (new FormDataNormalizer(new ContentConverter()))->normalize($submitted, $root, 'markdown');
 
         self::assertSame(['nbColumns' => 3, 'nbRows' => 12], $out['epics'][0]['technicalStories'][0]['subtasks'][0]['sqlImpact']);
     }

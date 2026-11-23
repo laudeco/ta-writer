@@ -95,6 +95,12 @@ collision gets a suffix (`ta-writer-2`).
 
 Versions are never rewritten. A restore creates a new version whose origin is `restore`.
 
+**Rich text fields.** The long text fields (what, why, where, how, and the content of a note resource) are Quill
+editors. Each one has three states: an untouched field keeps its stored value; an edited field is converted from the
+editor's HTML to the format of the document; a field edited in its Source view is converted from its stored format.
+Changing the format of the document converts every field on save, and the text format asks for a confirmation first.
+Quill is served from `public/assets/vendor/quill` (BSD-3, not a CDN).
+
 **Document versions.** Two fields are set by the server, never by a client:
 - `structureVersion` is the `info.version` of the OpenAPI file. The file is read-only on disk (`chmod 444`), and the
   form shows it read-only.

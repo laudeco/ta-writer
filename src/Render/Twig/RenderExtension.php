@@ -28,7 +28,12 @@ final class RenderExtension extends AbstractExtension
 
     public function getFunctions(): array
     {
-        return [new TwigFunction('mermaid_img', [$this, 'mermaidImage'], ['is_safe' => ['html']])];
+        return [
+            new TwigFunction('mermaid_img', [$this, 'mermaidImage'], ['is_safe' => ['html']]),
+            // the HTML a Quill editor starts from: checklists and tables in the form Quill reads
+            // not marked safe: it goes into an attribute (data-html), so Twig escapes its quotes
+            new TwigFunction('rich_html', fn (?string $content, string $format): string => $this->converter->toEditorHtml((string) $content, $format)),
+        ];
     }
 
     /**

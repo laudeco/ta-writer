@@ -50,10 +50,12 @@ final class EditorController extends AbstractController
     #[Route('/documents', name: 'ui_create', methods: ['POST'])]
     public function create(Request $request): Response
     {
-        $data = $this->normalizer->normalize($request->request->all('data'), $this->formBuilder->build());
+        $submitted = $request->request->all('data');
+        // a new analysis has no stored values: they are typed in the target format
+        $data = $this->normalizer->normalize($submitted, $this->formBuilder->build(), (string) ($submitted['format'] ?? 'markdown'));
         $errors = $this->errorsOf($data);
         if ($errors !== null) {
-            return $this->renderForm(null, $data, 0, $errors, Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->renderForm(null, $data, 0, $errors, Response::HTTP_UNPROCESSABLE_ENTITY, 0, (string) ($data['format'] ?? 'markdown'));
         }
 
         $stored = $this->repository->save(null, $data, 'ui');
@@ -67,17 +69,19 @@ final class EditorController extends AbstractController
     {
         $stored = $this->repository->get($id);
 
-        return $this->renderForm($id, $stored->data, $stored->version, [], Response::HTTP_OK, count($this->repository->versions($id)));
+        return $this->renderForm($id, $stored->data, $stored->version, [], Response::HTTP_OK, $this->historyCount($id), (string) ($stored->data['format'] ?? 'markdown'));
     }
 
     #[Route('/documents/{id}', name: 'ui_update', methods: ['POST'])]
     public function update(string $id, Request $request): Response
     {
         $expected = (int) $request->request->get('_version', 0);
-        $data = $this->normalizer->normalize($request->request->all('data'), $this->formBuilder->build());
+        // the stored values are in the format the page was opened with
+        $originalFormat = (string) $request->request->get('_format_original', 'markdown');
+        $data = $this->normalizer->normalize($request->request->all('data'), $this->formBuilder->build(), $originalFormat);
         $errors = $this->errorsOf($data);
         if ($errors !== null) {
-            return $this->renderForm($id, $data, $expected, $errors, Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->renderForm($id, $data, $expected, $errors, Response::HTTP_UNPROCESSABLE_ENTITY, $this->historyCount($id), (string) ($data['format'] ?? $originalFormat));
         }
 
         try {
@@ -85,7 +89,7 @@ final class EditorController extends AbstractController
         } catch (StaleVersionException $e) {
             $this->addFlash('error', sprintf('Someone saved a newer version (%d) meanwhile. Your changes are shown below: copy them, reload, and apply them again.', $e->current));
 
-            return $this->renderForm($id, $data, $e->expected, [], Response::HTTP_CONFLICT);
+            return $this->renderForm($id, $data, $e->expected, [], Response::HTTP_CONFLICT, $this->historyCount($id), (string) ($data['format'] ?? $originalFormat));
         }
         $this->addFlash('success', sprintf('Saved as version %d.', $stored->version));
 
@@ -125,16 +129,22 @@ final class EditorController extends AbstractController
         return $errors === [] ? null : $errors;
     }
 
+    private function historyCount(string $id): int
+    {
+        return count($this->repository->versions($id));
+    }
+
     /**
-     * @param array<string, mixed>                  $document
+     * @param array<string, mixed>                       $document
      * @param list<array{path: string, message: string}> $errors
      */
-    private function renderForm(?string $id, array $document, int $version, array $errors, int $status = Response::HTTP_OK, int $history = 0): Response
+    private function renderForm(?string $id, array $document, int $version, array $errors, int $status = Response::HTTP_OK, int $history = 0, string $docFormat = 'markdown'): Response
     {
         return $this->render('ui/editor/edit.html.twig', [
             'id' => $id,
             'version' => $version,
             'history' => $history,
+            'doc_format' => $docFormat,
             'document' => $document,
             'form' => $this->formBuilder->build(),
             'errors' => $errors,

@@ -158,7 +158,7 @@ components:
             - E1
         what:
           type: string
-          x-widget: textarea
+          x-widget: richtext
           description: Context of the epic.
         ticket:
           type: string
@@ -243,10 +243,10 @@ components:
             $ref: '#/components/schemas/Resource'
         what:
           type: string
-          x-widget: textarea
+          x-widget: richtext
         why:
           type: string
-          x-widget: textarea
+          x-widget: richtext
         subtasks:
           type: array
           items:
@@ -268,16 +268,16 @@ components:
             $ref: '#/components/schemas/Resource'
         what:
           type: string
-          x-widget: textarea
+          x-widget: richtext
         why:
           type: string
-          x-widget: textarea
+          x-widget: richtext
         where:
           type: string
-          x-widget: textarea
+          x-widget: richtext
         how:
           type: string
-          x-widget: textarea
+          x-widget: richtext
         ticket:
           type: string
         pageLink:
@@ -319,7 +319,10 @@ components:
           enum: [image, link, ticket, note]
         content:
           type: string
-          x-widget: textarea
+          x-widget: richtext
+          x-richtext-when:
+            field: type
+            equals: note
 
     Diagram:
       type: object

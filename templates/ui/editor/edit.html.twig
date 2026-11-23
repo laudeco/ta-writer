@@ -1,5 +1,10 @@
 {% extends 'ui/base.html.twig' %}
 {% block title %}{{ id ? id ~ ' — ' : 'New analysis — ' }}TA Writer{% endblock %}
+{% block head %}<link rel="stylesheet" href="/assets/vendor/quill/quill.snow.css">{% endblock %}
+{% block scripts %}
+<script src="/assets/vendor/quill/quill.js" defer></script>
+<script src="/assets/richtext.js" defer></script>
+{% endblock %}
 {% block body %}
 <div class="doc-head">
     <div>
@@ -33,7 +38,10 @@
 
 <form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor">
     {% if id %}<input type="hidden" name="_version" value="{{ version }}">{% endif %}
-    {% include 'ui/form/node.html.twig' with { node: form, name: 'data', value: document } only %}
+    {# the format the stored values are written in: the rich fields convert from it when the format changes #}
+    <input type="hidden" name="_format_original" value="{{ doc_format }}">
+    <div class="format-notice" data-format-notice hidden>Saved as <strong data-format-target></strong>. Stored values are converted when you save.</div>
+    {% include 'ui/form/node.html.twig' with { node: form, name: 'data', value: document, siblings: null, doc_format: doc_format } only %}
     <div class="savebar">
         <span class="hint">{{ id ? 'Saving creates a new version when the content changes.' : 'The analysis gets version 1.0.0.' }}</span>
         <a class="btn ghost" href="/">Cancel</a>

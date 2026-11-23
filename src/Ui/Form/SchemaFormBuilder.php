@@ -37,6 +37,7 @@ final class SchemaFormBuilder
 
         $description = isset($schema['description']) ? (string) $schema['description'] : null;
         $readOnly = (bool) ($schema['readOnly'] ?? false);
+        $richWhen = isset($schema['x-richtext-when']) ? ['field' => (string) $schema['x-richtext-when']['field'], 'equals' => (string) $schema['x-richtext-when']['equals']] : null;
         $placeholder = isset($schema['examples'][0]) ? (string) $schema['examples'][0] : null;
         $type = $schema['type'] ?? 'string';
 
@@ -65,10 +66,11 @@ final class SchemaFormBuilder
             ($schema['format'] ?? '') === 'uri' => 'url',
             ($schema['format'] ?? '') === 'email' => 'email',
             ($schema['x-widget'] ?? '') === 'code' => 'code',
+            ($schema['x-widget'] ?? '') === 'richtext' => 'richtext',
             ($schema['x-widget'] ?? '') === 'textarea' => 'textarea',
             default => 'text',
         };
 
-        return new FieldNode($name, $widget, $required, $description, $placeholder, [], [], null, $readOnly);
+        return new FieldNode($name, $widget, $required, $description, $placeholder, [], [], null, $readOnly, $richWhen);
     }
 }

@@ -1,4 +1,4 @@
-{# One node of the generated form. node: FieldNode, name: HTML name, value: current value (or null). Recursive. #}
+{# One node of the generated form. node: FieldNode, name: HTML name, value: current value (or null), siblings: the object holding it, doc_format: format the stored values are written in. Recursive. #}
 {% if node.widget == 'object' %}
     <fieldset class="object{% if node.name == 'data' %} root{% endif %}">
         {% if node.name != 'data' %}
@@ -10,6 +10,8 @@
                 node: child,
                 name: name ~ '[' ~ child.name ~ ']',
                 value: (value is iterable and value[child.name] is defined) ? value[child.name] : null,
+                siblings: value,
+                doc_format: doc_format,
             } only %}
         {% endfor %}
     </fieldset>
@@ -29,7 +31,7 @@
                         <button type="button" data-move="down" title="Move down">&darr;</button>
                         <button type="button" class="danger" data-remove>Remove</button>
                     </div>
-                    {% include 'ui/form/node.html.twig' with { node: node.item, name: name ~ '[' ~ loop.index0 ~ ']', value: item } only %}
+                    {% include 'ui/form/node.html.twig' with { node: node.item, name: name ~ '[' ~ loop.index0 ~ ']', value: item, siblings: null, doc_format: doc_format } only %}
                 </div>
             {% endfor %}
         </div>
@@ -41,20 +43,44 @@
                     <button type="button" data-move="down" title="Move down">&darr;</button>
                     <button type="button" class="danger" data-remove>Remove</button>
                 </div>
-                {% include 'ui/form/node.html.twig' with { node: node.item, name: name ~ '[__INDEX__]', value: null } only %}
+                {% include 'ui/form/node.html.twig' with { node: node.item, name: name ~ '[__INDEX__]', value: null, siblings: null, doc_format: doc_format } only %}
             </div>
         </template>
         <button type="button" class="add" data-add>+ Add {{ node.label|lower }}</button>
     </div>
+{% elseif node.widget == 'richtext' %}
+    {# A rich field: a Quill editor (initialised lazily by richtext.js), the stored value kept untouched in `original`,
+       what the editor produced in `html`, and the Source view in `source`. The mode says which one to use. #}
+    {% set original = value is iterable ? '' : (value ?? '') %}
+    {% set rich_on = node.richWhen is null or (siblings is iterable and siblings[node.richWhen.field] is defined and siblings[node.richWhen.field] == node.richWhen.equals) %}
+    <div class="field wide rich{% if not rich_on %} is-hidden{% endif %}" data-rich
+         {% if node.richWhen is not null %}data-when-field="{{ node.richWhen.field }}" data-when-equals="{{ node.richWhen.equals }}"{% endif %}>
+        <span class="field-label">{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
+        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
+        <div class="rich-shell" data-rich-shell data-format="{{ doc_format }}">
+            <div class="rich-editor" data-rich-editor data-html="{{ rich_html(original, doc_format) }}" data-rich-ready="false"></div>
+            <div class="rich-source" data-rich-source-view hidden>
+                <textarea name="{{ name }}[source]" class="code" rows="8" aria-label="{{ node.label }} source"{% if not rich_on %} disabled{% endif %}>{{ original }}</textarea>
+            </div>
+        </div>
+        <input type="hidden" name="{{ name }}[original]" value="{{ original }}"{% if not rich_on %} disabled{% endif %}>
+        <input type="hidden" name="{{ name }}[mode]" value="raw" data-rich-mode{% if not rich_on %} disabled{% endif %}>
+        <input type="hidden" name="{{ name }}[html]" value="" data-rich-html{% if not rich_on %} disabled{% endif %}>
+        {# plain fallback, used when the rich editor is switched off by its condition (a resource that is not a note) #}
+        {% if node.richWhen is not null %}
+            <textarea class="plain-fallback" name="{{ name }}" rows="3"{% if rich_on %} disabled{% endif %}>{{ original }}</textarea>
+        {% endif %}
+    </div>
 {% elseif node.widget == 'select' %}
     <label class="field">
         <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
-        <select name="{{ name }}"{% if node.readOnly %} disabled{% endif %}>
+        <select name="{{ name }}"{% if node.readOnly %} disabled{% endif %} data-field="{{ node.name }}">
             <option value="">&mdash;</option>
             {% for option in node.options %}
                 <option value="{{ option }}"{% if value == option %} selected{% endif %}>{{ option }}</option>
             {% endfor %}
         </select>
+        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
     </label>
 {% elseif node.widget == 'textarea' or node.widget == 'code' %}
     <label class="field wide">

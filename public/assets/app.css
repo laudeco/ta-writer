@@ -303,3 +303,30 @@ pre.json {
 
 /* cards side by side do not stack their spacing */
 .publish-grid > .card, .publish-grid > .card + .card { margin-top: 0; }
+
+/* ---------- rich text fields (Quill) ---------- */
+.rich .field-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+.rich .rich-toggle { margin-left: auto; padding: 2px 8px; font-size: 12px; }
+.rich-shell { border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); overflow: hidden; transition: border-color .12s, box-shadow .12s; }
+.rich-shell:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.rich.is-edited .rich-shell { border-color: var(--primary); }
+.rich-shell .ql-toolbar.ql-snow { border: 0; border-bottom: 1px solid var(--border); background: var(--surface-2); padding: 6px 8px; }
+.rich-shell .ql-container.ql-snow { border: 0; font: inherit; font-size: 14px; }
+.rich-shell .ql-editor { min-height: 96px; line-height: 1.6; color: var(--text); padding: 12px 14px; }
+.rich-shell .ql-editor.ql-blank::before { color: var(--muted); font-style: normal; left: 14px; }
+.rich-shell .ql-editor pre.ql-syntax { background: var(--code-bg); color: var(--text-2); border-radius: 6px; font-family: var(--mono); font-size: 12.5px; }
+.rich-shell .ql-editor code { font-family: var(--mono); background: var(--code-bg); }
+.rich-shell .ql-editor blockquote { border-left: 3px solid var(--primary); padding-left: 12px; color: var(--text-2); }
+.rich-shell .ql-editor table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+.rich-shell .ql-editor td { border: 1px solid var(--border-strong); padding: 6px 8px; }
+.rich-shell .ql-toolbar button.ql-table { width: auto; padding: 0 6px; font-size: 12px; color: var(--text-2); }
+.rich-shell .ql-toolbar button.ql-table::before { content: "Table"; }
+.rich-shell .ql-toolbar button.ql-table svg { display: none; }
+.rich.format-text .ql-toolbar { display: none; }
+.rich .rich-source textarea { border: 0; border-radius: 0; background: var(--code-bg); min-height: 150px; width: 100%; font-family: var(--mono); font-size: 12.5px; padding: 12px 14px; color: var(--text); resize: vertical; }
+.rich .rich-source textarea:focus { outline: none; }
+.rich.is-hidden, .format-notice[hidden] { display: none; }
+.format-notice { margin: 4px 0 14px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--primary-soft); color: var(--text-2); font-size: 13px; }
+.format-notice strong { color: var(--primary); }
+.plain-fallback { width: 100%; font: inherit; padding: 8px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+.rich-editor[data-rich-editor] { min-height: 96px; }
