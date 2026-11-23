@@ -5,7 +5,7 @@
             <legend>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</legend>
             {% if node.description %}<p class="help">{{ node.description }}</p>{% endif %}
         {% endif %}
-        {% for child in node.children %}
+        {% for child in node.displayChildren() %}
             {% include 'ui/form/node.html.twig' with {
                 node: child,
                 name: name ~ '[' ~ child.name ~ ']',
