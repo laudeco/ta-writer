@@ -22,6 +22,7 @@ The full specification is in [`docs/ta-writer-json-ta-tool.md`](docs/ta-writer-j
 | PDF (mPDF, mermaid rendered to PNG by mermaid-cli) | done |
 | Confluence API (page tree, Personal Access Token) | done (live instance not verified, see below) |
 | Confluence AGIR (Chrome driven by PHP, Jira tickets, pages, Blocks links) | done (live instance not verified, see below) |
+| Jira API (tickets only: epics, technical stories and sub-tasks carry their own content; no page, no browser) | done (live instance not verified, see below) |
 
 ## Requirements
 
@@ -209,3 +210,22 @@ Tests run in the container with `var/test-data` as storage, so they never touch 
 - **Port 8080 already in use**: stop the other process, or change the port in `docker-compose.yml`.
 - **Permission errors on `data/` or `var/`**: the containers run with your user id (`USERID`/`GROUPID` in the Makefile).
   Remove the directory from a container running as root, then restart.
+
+## Jira API adapter (`jira`)
+
+Publishes the structure as Jira tickets only, through the REST API v2 with a Personal Access Token:
+
+- an **epic** per epic, a **Technical Story** per technical story, a **Sub-task** per subtask; the summary is the
+  reference-prefixed title (`TAW E1 TS1 Subtask#1 - Title`), and the description carries the content (context, what, why,
+  where, how, criteria, resources, feature toggles, SQL impact);
+- **user stories have no ticket**: they and their acceptance criteria are listed in the description of their epic;
+- diagrams are rendered to PNG, attached to the ticket and shown in the description (a re-run replaces the attachment);
+- the Blocks links between technical stories are created, when they do not exist yet;
+- a re-run **rewrites** the summary and the description of the tickets it knows (manual edits made in Jira on these two
+  fields are overwritten), and creates nothing twice;
+- only the keys are written back into the JSON, in one version at the end of the run.
+
+Set `JIRA_PAT` in `.env.local`. The options (projects, fix version, issue types, the Epic Link field and the optional
+"Epic Name" field) are asked by the publication page, or given with `--option`. Run a dry run first:
+`php bin/console app:ta:publish <id> --format=jira --dry-run`.
+

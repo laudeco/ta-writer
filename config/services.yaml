@@ -106,6 +106,12 @@ services:
             $confluenceBaseUrl: '%env(CONFLUENCE_BASE_URL)%'
             $confluenceToken: '%env(default::CONFLUENCE_PAT)%'
 
+    App\Publication\Adapter\JiraPublisher:
+        arguments:
+            $jiraBaseUrl: '%env(JIRA_BASE_URL)%'
+            $jiraToken: '%env(default::JIRA_PAT)%'
+            $http: ~
+
     App\Publication\Adapter\AgirPublisher:
         arguments:
             $confluenceOrigin: '%env(CONFLUENCE_BASE_URL)%'
