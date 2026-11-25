@@ -1,15 +1,12 @@
-// Reference dropdowns (the `from` and `to` of a dependency): each one lists every reference of the document that a
-// dependency can point to: epics, user stories and technical stories. The lists follow the document as it is edited;
-// a value that is no longer in the document stays selected and is marked, so nothing is lost silently.
+// Reference dropdowns (the `from` and `to` of a dependency). Each list follows the structure of the document: one group per
+// epic, then its user stories and technical stories, and the sub-tasks under their technical story (indented). The lists
+// follow the document as it is edited; a value that is no longer in the document stays selected and is marked.
 (function () {
     'use strict';
 
-    var GROUPS = [
-        { nav: 'epics', label: 'Epics' },
-        { nav: 'userStories', label: 'User stories' },
-        { nav: 'technicalStories', label: 'Technical stories' },
-        { nav: 'subtasks', label: 'Subtasks' }
-    ];
+    // levels of the hierarchy: an epic, its user stories and technical stories, the sub-tasks under their technical story
+    var LEVEL = { epics: 0, userStories: 1, technicalStories: 1, subtasks: 2 };
+    var INDENT = '\u00a0\u00a0\u00a0\u00a0';
     var form = null;
     var timer = null;
 
@@ -25,34 +22,53 @@
         return '';
     }
 
-    // every reference a dependency may name, in document order, per group
+    // one group per epic, in the order of the document: the epic, then its user stories and technical stories, and the
+    // sub-tasks of each technical story under it (indented). A sub-task is named TS1/Subtask#1.
     function collect() {
-        return GROUPS.map(function (group) {
-            var items = Array.prototype.slice.call(form.querySelectorAll('[data-collection][data-nav="' + group.nav + '"] > [data-items] > [data-item]'));
-            var refs = [];
-            items.forEach(function (item) {
+        var groups = [];
+        Array.prototype.forEach.call(form.querySelectorAll('[data-collection][data-nav="epics"] > [data-items] > [data-item]'), function (epic) {
+            var entries = [];
+            var epicRef = ownValue(epic, 'reference');
+            if (epicRef !== '') {
+                entries.push({ level: 0, ref: epicRef, title: ownValue(epic, 'title') });
+            }
+            Array.prototype.forEach.call(epic.querySelectorAll('[data-item]'), function (item) {
+                // only the kinds that a dependency may name (resources and diagrams are not references)
+                var collection = item.closest('[data-collection]');
+                var nav = collection ? collection.getAttribute('data-nav') : '';
+                if (!LEVEL.hasOwnProperty(nav) || nav === 'epics') {
+                    return;
+                }
                 var ref = ownValue(item, 'reference');
-                if (group.nav === 'subtasks') {
+                if (nav === 'subtasks') {
                     // a sub-task is named by its technical story: TS1/Subtask#1
                     var story = item.parentElement && item.parentElement.closest('[data-item]');
                     var storyRef = story ? ownValue(story, 'reference') : '';
                     ref = storyRef !== '' && ref !== '' ? storyRef + '/' + ref : '';
                 }
                 if (ref !== '') {
-                    refs.push({ ref: ref, title: ownValue(item, 'title') });
+                    entries.push({ level: LEVEL[nav], ref: ref, title: ownValue(item, 'title') });
                 }
             });
-
-            return { label: group.label, refs: refs };
+            if (entries.length > 0) {
+                groups.push({ label: epicRef !== '' ? epicRef + (ownValue(epic, 'title') ? ' — ' + ownValue(epic, 'title') : '') : 'Epic', entries: entries });
+            }
         });
+
+        return groups;
     }
 
-    function optionFor(ref, title) {
+    function optionFor(entry) {
         var option = document.createElement('option');
-        option.value = ref;
-        option.textContent = title !== '' ? ref + ' — ' + title : ref;
+        option.value = entry.ref;
+        var text = entry.title !== '' ? entry.ref + ' — ' + entry.title : entry.ref;
+        option.textContent = repeat(INDENT, entry.level) + text;
 
         return option;
+    }
+
+    function repeat(text, times) {
+        return new Array(times + 1).join(text);
     }
 
     // the list is rebuilt keeping the value chosen; a value that is gone is kept and marked
@@ -66,14 +82,11 @@
         empty.textContent = '—';
         select.appendChild(empty);
         groups.forEach(function (group) {
-            if (group.refs.length === 0) {
-                return;
-            }
             var optgroup = document.createElement('optgroup');
             optgroup.label = group.label;
-            group.refs.forEach(function (entry) {
+            group.entries.forEach(function (entry) {
                 known[entry.ref] = true;
-                optgroup.appendChild(optionFor(entry.ref, entry.title));
+                optgroup.appendChild(optionFor(entry));
             });
             select.appendChild(optgroup);
         });
