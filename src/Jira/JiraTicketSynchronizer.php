@@ -33,7 +33,12 @@ final class JiraTicketSynchronizer
             return ['key' => '', 'created' => true];
         }
 
-        return ['key' => $this->jira->createIssue($this->fields($options->epicProject, 'Epic', $summary, $options)), 'created' => true];
+        $fields = $this->fields($options->epicProject, $options->epicType, $summary, $options);
+        if ($options->epicNameField !== null) {
+            $fields[$options->epicNameField] = mb_substr($summary, 0, 255);
+        }
+
+        return ['key' => $this->jira->createIssue($fields), 'created' => true];
     }
 
     /**
@@ -54,7 +59,7 @@ final class JiraTicketSynchronizer
         if ($dryRun) {
             return ['key' => '', 'created' => true];
         }
-        $fields = $this->fields($options->storyProject, 'Technical Story', $summary, $options);
+        $fields = $this->fields($options->storyProject, $options->storyType, $summary, $options);
         $fields[$options->epicLinkField] = $epicKey;
 
         return ['key' => $this->jira->createIssue($fields), 'created' => true];
@@ -78,7 +83,7 @@ final class JiraTicketSynchronizer
         if ($dryRun) {
             return ['key' => '', 'created' => true];
         }
-        $fields = $this->fields($options->storyProject, 'Sub-task', $summary, $options);
+        $fields = $this->fields($options->storyProject, $options->subtaskType, $summary, $options);
         $fields['parent'] = ['key' => $tsKey];
 
         return ['key' => $this->jira->createIssue($fields), 'created' => true];

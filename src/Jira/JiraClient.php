@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Jira;
 
 use Symfony\Component\HttpClient\Exception\TransportException;
+use Symfony\Component\Mime\Part\DataPart;
+use Symfony\Component\Mime\Part\Multipart\FormDataPart;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -58,6 +60,63 @@ final class JiraClient
             static fn (array $issue): array => ['key' => (string) $issue['key'], 'summary' => (string) ($issue['fields']['summary'] ?? '')],
             $response['body']['issues'] ?? [],
         );
+    }
+
+    /**
+     * Replaces the summary and the fields given, on an existing issue.
+     *
+     * @param array<string, mixed> $fields
+     */
+    public function updateIssue(string $key, array $fields): void
+    {
+        $response = $this->call('PUT', '/rest/api/2/issue/'.$key, ['fields' => $fields]);
+        if ($response['status'] !== 204) {
+            throw new \RuntimeException(sprintf('Jira %s not updated: HTTP %d %s', $key, $response['status'], $this->message($response['body'])));
+        }
+    }
+
+    /**
+     * @return list<array{id: string, filename: string}>
+     */
+    public function attachments(string $key): array
+    {
+        $response = $this->call('GET', sprintf('/rest/api/2/issue/%s?fields=attachment', $key));
+        if ($response['status'] !== 200) {
+            throw new \RuntimeException(sprintf('Jira %s attachments: HTTP %d', $key, $response['status']));
+        }
+
+        return array_map(
+            static fn (array $file): array => ['id' => (string) $file['id'], 'filename' => (string) $file['filename']],
+            $response['body']['fields']['attachment'] ?? [],
+        );
+    }
+
+    /**
+     * Uploads a file to the issue. Jira refuses uploads without the XSRF bypass header, hence the header.
+     */
+    public function addAttachment(string $key, string $filename, string $bytes): void
+    {
+        $form = new FormDataPart(['file' => new DataPart($bytes, $filename, 'image/png')]);
+        $response = $this->http->request('POST', rtrim($this->baseUrl, '/').sprintf('/rest/api/2/issue/%s/attachments', $key), [
+            'headers' => [
+                'Authorization' => 'Bearer '.$this->token,
+                'Accept' => 'application/json',
+                'X-Atlassian-Token' => 'no-check',
+            ] + $form->getPreparedHeaders()->toArray(),
+            'body' => $form->bodyToString(),
+        ]);
+        $status = $response->getStatusCode();
+        if ($status !== 200) {
+            throw new \RuntimeException(sprintf('Jira %s attachment %s: HTTP %d', $key, $filename, $status));
+        }
+    }
+
+    public function deleteAttachment(string $id): void
+    {
+        $response = $this->call('DELETE', '/rest/api/2/attachment/'.$id);
+        if ($response['status'] !== 204) {
+            throw new \RuntimeException(sprintf('Jira attachment %s not deleted: HTTP %d', $id, $response['status']));
+        }
     }
 
     /**
@@ -134,6 +193,11 @@ final class JiraClient
      */
     private function message(array $body): string
     {
-        return (string) ($body['errorMessages'][0] ?? $body['errors'] ? json_encode($body['errors'] ?? []) : json_encode($body));
+        $first = $body['errorMessages'][0] ?? null;
+        if (is_string($first) && $first !== '') {
+            return $first;
+        }
+
+        return (string) json_encode($body['errors'] ?? $body);
     }
 }
