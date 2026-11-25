@@ -48,6 +48,9 @@
             if (window.TAChildMenu) {
                 window.TAChildMenu.initIn(item);
             }
+            if (window.TAReferences) {
+                window.TAReferences.initIn(item);
+            }
             renumber(collection.querySelector(':scope > [data-items]'));
             refreshCount(collection);
             var firstField = item.querySelector('input, textarea, select');

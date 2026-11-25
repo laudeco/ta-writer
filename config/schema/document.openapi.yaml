@@ -141,9 +141,11 @@ components:
       properties:
         from:
           type: string
+          x-widget: reference
           description: Reference of the blocking item.
         to:
           type: string
+          x-widget: reference
           description: Reference of the blocked item (is blocked by `from`).
 
     Epic:

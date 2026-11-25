@@ -76,6 +76,17 @@
             <textarea class="plain-fallback" name="{{ name }}" rows="3" placeholder="URL, ticket key or text" aria-label="{{ node.label }}"{% if rich_on %} disabled hidden{% endif %}>{{ original }}</textarea>
         {% endif %}
     </div>
+{% elseif node.widget == 'reference' %}
+    {# A reference of the document: a dropdown filled with the references by references.js. The stored value is kept selected
+       even before the script runs, and even when it no longer exists in the document (the validation reports it). #}
+    <label class="field reference-field" data-reference-field>
+        <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
+        <select name="{{ name }}" data-reference-select data-value="{{ value }}"{% if node.readOnly %} disabled{% endif %}>
+            <option value="">&mdash;</option>
+            {% if value is not empty %}<option value="{{ value }}" selected>{{ value }}</option>{% endif %}
+        </select>
+        {% if node.description %}<small class="help">{{ node.description }}</small>{% endif %}
+    </label>
 {% elseif node.widget == 'select' %}
     <label class="field">
         <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>

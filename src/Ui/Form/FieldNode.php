@@ -10,7 +10,7 @@ namespace App\Ui\Form;
 final class FieldNode
 {
     /**
-     * @param 'object'|'array'|'text'|'textarea'|'richtext'|'code'|'url'|'email'|'integer'|'select' $widget
+     * @param 'object'|'array'|'text'|'textarea'|'richtext'|'code'|'url'|'email'|'integer'|'select'|'reference' $widget
      * @param list<string>                                                              $options  enum values for a select
      * @param list<FieldNode>                                                           $children object properties, in schema order
      */

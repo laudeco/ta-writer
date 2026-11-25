@@ -10,7 +10,7 @@ use App\Schema\SchemaProvider;
  * Builds the form tree of the Document from the OpenAPI schema.
  *
  * A property added to the YAML shows up in the editor without any code change. The widget comes from the schema:
- * `enum` -> select, `format: uri|email` -> url|email input, `type: integer` -> number, `x-widget` -> textarea or code,
+ * `enum` -> select, `format: uri|email` -> url|email input, `type: integer` -> number, `x-widget` -> textarea, code or reference (a dropdown of the document's references),
  * `type: object` -> a fieldset, `type: array` -> a repeatable list.
  */
 final class SchemaFormBuilder
@@ -68,6 +68,7 @@ final class SchemaFormBuilder
             ($schema['x-widget'] ?? '') === 'code' => 'code',
             ($schema['x-widget'] ?? '') === 'richtext' => 'richtext',
             ($schema['x-widget'] ?? '') === 'textarea' => 'textarea',
+            ($schema['x-widget'] ?? '') === 'reference' => 'reference',
             default => 'text',
         };
 

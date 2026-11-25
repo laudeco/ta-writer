@@ -531,3 +531,16 @@ fieldset.object[data-kind="group"]:not(.root) { border-left: 4px solid var(--kin
     .item-bar .item-summary { flex-basis: 100%; order: 3; white-space: normal; }
     .item.is-collapsed .item-bar .item-summary { order: 0; }
 }
+
+/* ---------- dependencies: two reference dropdowns side by side ---------- */
+.reference-field select { width: 100%; }
+.reference-field select.is-orphan { border-color: var(--danger); color: var(--danger); }
+.item[data-kind="dependencies"] > fieldset.object { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 32px; align-items: start; }
+.item[data-kind="dependencies"] > fieldset.object > legend { grid-column: 1 / -1; }
+.item[data-kind="dependencies"] .reference-field:first-of-type { position: relative; }
+.item[data-kind="dependencies"] .reference-field:first-of-type::after { content: '\2192'; position: absolute; right: -22px; top: 34px; color: var(--muted); font-size: 18px; line-height: 1; }
+@media (max-width: 760px) {
+    .item[data-kind="dependencies"] > fieldset.object { grid-template-columns: minmax(0, 1fr); }
+    .item[data-kind="dependencies"] .reference-field:first-of-type::after { content: none; }
+}
+.item[data-kind="dependencies"] > fieldset.object > .help { grid-column: 1 / -1; }

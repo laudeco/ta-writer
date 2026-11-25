@@ -70,7 +70,9 @@
 
     // the label of a collapsed item: "reference — title", or the first value typed in it
     function summaryOf(item) {
-        var fields = item.querySelectorAll('input[name], textarea[name]');
+        var fields = item.querySelectorAll('input[name], textarea[name], select[name]');
+        var from = '';
+        var to = '';
         var reference = '';
         var title = '';
         var fallback = '';
@@ -79,7 +81,11 @@
                 return;
             }
             var value = (field.value || '').trim();
-            if (/\[reference\]$/.test(field.name)) {
+            if (/\[from\]$/.test(field.name)) {
+                from = value;
+            } else if (/\[to\]$/.test(field.name)) {
+                to = value;
+            } else if (/\[reference\]$/.test(field.name)) {
                 reference = value;
             } else if (/\[title\]$/.test(field.name)) {
                 title = value;
@@ -87,6 +93,10 @@
                 fallback = value;
             }
         });
+        if (from !== '' || to !== '') {
+            // a dependency: "blocker → blocked"
+            return (from || '?') + ' \u2192 ' + (to || '?');
+        }
         if (reference === '' && title === '') {
             return fallback !== '' ? fallback : '(empty)';
         }
@@ -222,13 +232,17 @@
             blocks.forEach(function (block) { setCollapsed(block, true, false); });
             save();
         }
-        form.addEventListener('input', function (event) {
-            if (/\[(reference|title)\]$/.test(event.target.name || '')) {
+        // a select (a dependency's end) fires change; the other fields fire input
+        ['input', 'change'].forEach(function (type) {
+            form.addEventListener(type, function (event) {
+                if (!/\[(reference|title|from|to)\]$/.test(event.target.name || '')) {
+                    return;
+                }
                 var item = event.target.closest('[data-item]');
                 if (item) {
                     updateSummary(item);
                 }
-            }
+            });
         });
         document.addEventListener('click', function (event) {
             if (event.target.closest('[data-collapse-all]')) {
