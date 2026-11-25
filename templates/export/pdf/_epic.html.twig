@@ -2,6 +2,7 @@
 <sethtmlpageheader name="epic{{ index }}" value="on" show-this-page="1"></sethtmlpageheader>
 {% if not first %}<pagebreak />{% endif %}
 <h2 class="epic-title">{{ epic.displayTitle }}</h2>
+{% if epic.context is not empty %}<p class="lead">{{ epic.context }}</p>{% endif %}
 {% if epic.what is not empty %}
     <div class="section-title">Context</div>
     <div class="text">{{ epic.what|content_html(doc.format) }}</div>

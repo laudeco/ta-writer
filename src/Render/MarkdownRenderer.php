@@ -48,6 +48,7 @@ final class MarkdownRenderer
             $out[] = '';
             $out[] = sprintf('## %s', $epic['displayTitle']);
             $out[] = '';
+            $this->summary($out, (string) ($epic['context'] ?? ''));
             $this->text($out, $format, $epic['what'], 'Context');
             $this->resources($out, $epic['resources']);
             $this->diagrams($out, $epic['diagrams']);
@@ -68,6 +69,7 @@ final class MarkdownRenderer
                 $out[] = '';
                 $out[] = sprintf('### %s', $ts['displayTitle']);
                 $out[] = '';
+                $this->summary($out, (string) ($ts['context'] ?? ''));
                 $this->text($out, $format, $ts['what'], 'What');
                 $this->text($out, $format, $ts['why'], 'Why');
                 if ($ts['acceptanceCriteriaCovered'] !== []) {
@@ -94,6 +96,7 @@ final class MarkdownRenderer
                         $out[] = sprintf('- Criterion: %s', $sub['criterion']);
                     }
                     $out[] = '';
+                    $this->summary($out, (string) ($sub['context'] ?? ''));
                     $this->text($out, $format, $sub['what'], 'What');
                     $this->text($out, $format, $sub['why'], 'Why');
                     $this->text($out, $format, $sub['where'], 'Where');
@@ -164,6 +167,21 @@ final class MarkdownRenderer
     private function escapeCell(string $text): string
     {
         return str_replace('|', '\\|', $text);
+    }
+
+    /**
+     * The context of a node: a one-line summary, in italics, above its What. Nothing is written when it is empty.
+     *
+     * @param list<string> $out
+     */
+    private function summary(array &$out, string $context): void
+    {
+        $text = trim((string) preg_replace('/\s+/', ' ', $context));
+        if ($text === '') {
+            return;
+        }
+        $out[] = '*'.str_replace(['\\', '*', '_', '`', '[', ']'], ['\\\\', '\\*', '\\_', '\\`', '\\[', '\\]'], $text).'*';
+        $out[] = '';
     }
 
     /**

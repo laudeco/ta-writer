@@ -128,7 +128,7 @@ final class AgirPublisher implements PublisherInterface
                     $cloner->apply($epicBase, [
                         'Epic Jira' => $this->jiraMacro($epicKey),
                         'E US / AC' => $this->e((string) $epic['reference']),
-                        'Context' => $this->e($this->firstSentence($epic['what'])),
+                        'Context' => $this->e(trim((string) ($epic['context'] ?? '')) !== '' ? (string) ($epic['context'] ?? '') : $this->firstSentence($epic['what'])),
                     ], ['Context']).$this->diagramSection($epic['diagrams'], "epic".($e + 1)),
                     $this->diagrams->collect($epic['diagrams'], 'epic'.($e + 1)),
                     $messages, $updates, "/epics/$e",
@@ -143,7 +143,7 @@ final class AgirPublisher implements PublisherInterface
                         'Epic Jira' => $this->jiraMacro($epicKey),
                         'Story Jira' => $this->jiraMacro($tsKey),
                         'E US / AC' => $this->e(trim($epic['reference'].' '.$ts['reference'])),
-                        'Context' => $this->e($this->firstSentence($ts['what'])),
+                        'Context' => $this->e(trim((string) ($ts['context'] ?? '')) !== '' ? (string) ($ts['context'] ?? '') : $this->firstSentence($ts['what'])),
                         'Feature Toggle' => $this->e(implode(', ', $ts['featureToggles']) ?: '-'),
                     ];
                     if ($analyst !== '') {

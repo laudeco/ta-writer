@@ -22,6 +22,7 @@ final class JiraDescriptionBuilder
     public function epic(array $epic, string $format, array $diagrams): string
     {
         $sections = [
+            $this->intro((string) ($epic['context'] ?? '')),
             $this->section('Context', $this->rich((string) ($epic['what'] ?? ''), $format)),
             $this->section('User stories', $this->userStories($epic['userStories'] ?? [], $format)),
             $this->section('Resources', $this->resources($epic['resources'] ?? [], $format)),
@@ -38,6 +39,7 @@ final class JiraDescriptionBuilder
     public function technicalStory(array $ts, string $format, array $diagrams): string
     {
         $sections = [
+            $this->intro((string) ($ts['context'] ?? '')),
             $this->section('What', $this->rich((string) ($ts['what'] ?? ''), $format)),
             $this->section('Why', $this->rich((string) ($ts['why'] ?? ''), $format)),
             $this->section('Acceptance criteria covered', $this->bullets($ts['acceptanceCriteriaCovered'] ?? [])),
@@ -57,6 +59,7 @@ final class JiraDescriptionBuilder
     public function subtask(array $sub, string $format, array $diagrams): string
     {
         $sections = [
+            $this->intro((string) ($sub['context'] ?? '')),
             $this->section('What', $this->rich((string) ($sub['what'] ?? ''), $format)),
             $this->section('Why', $this->rich((string) ($sub['why'] ?? ''), $format)),
             $this->section('Where', $this->rich((string) ($sub['where'] ?? ''), $format)),
@@ -155,6 +158,16 @@ final class JiraDescriptionBuilder
     private function plain(string $text): string
     {
         return $this->wiki->fromFormat($text, 'text');
+    }
+
+    /**
+     * The context of a node, as an italic line before its sections. Nothing when it is empty.
+     */
+    private function intro(string $context): string
+    {
+        $text = trim((string) preg_replace('/\s+/', ' ', $context));
+
+        return $text === '' ? '' : '_'.$this->plain($text).'_';
     }
 
     private function section(string $heading, string $body): string

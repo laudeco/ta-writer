@@ -24,6 +24,7 @@ final class PageBodyBuilder
             'Epic Jira' => $this->jiraMacro($epic['ticket']),
             'Technical stories' => (string) count($epic['technicalStories']),
         ]);
+        $out .= $this->intro((string) ($epic['context'] ?? ''));
         $out .= $this->section('Context', $this->storage->content($epic['what'], $format, $files));
         $out .= $this->resources($epic['resources'], $format);
         $out .= $this->diagrams($epic['diagrams'], $files);
@@ -51,10 +52,11 @@ final class PageBodyBuilder
                 'Story Jira' => $this->jiraMacro($ts['ticket']),
                 'E US / AC' => $this->e(implode(', ', $criteria) ?: '-'),
                 'Feature Toggle' => $this->e(implode(', ', $ts['featureToggles']) ?: '-'),
-                'Context' => $this->e($this->firstSentence($ts['what'])),
+                'Context' => $this->e(trim((string) ($ts['context'] ?? '')) !== '' ? (string) ($ts['context'] ?? '') : $this->firstSentence($ts['what'])),
             ]),
             '',
         );
+        $out .= $this->intro((string) ($ts['context'] ?? ''));
         $out .= $this->section('What', $this->storage->content($ts['what'], $format, $files));
         $out .= $this->section('Why', $this->storage->content($ts['why'], $format, $files));
         $out .= '<h2>Acceptance criteria covered</h2><ul>'.implode('', array_map(fn (string $ac): string => sprintf('<li>%s</li>', $this->e($ac)), $criteria)).'</ul>';
@@ -80,11 +82,11 @@ final class PageBodyBuilder
             'TBL' => sprintf('<ac:link><ri:page ri:content-title="%s" /></ac:link>', $this->e($tsTitle)),
             'Jira parent' => $this->jiraMacro($tsTicket),
             'Jira issue' => $this->jiraMacro($sub['ticket']),
-            'Context' => $this->e($this->firstSentence($sub['why'])),
+            'Context' => $this->e(trim((string) ($sub['context'] ?? '')) !== '' ? (string) ($sub['context'] ?? '') : $this->firstSentence($sub['why'])),
             'Feature Toggle' => $this->e((string) ($sub['featureToggle'] ?? '-')),
         ] + $sql);
 
-        $check = $this->storage->content($sub['what'], $format, $files);
+        $check = $this->intro((string) ($sub['context'] ?? '')).$this->storage->content($sub['what'], $format, $files);
         $why = trim($sub['why']) === '' ? '' : $this->panel('darkorange', 'Why', $this->storage->content($sub['why'], $format, $files));
         $info = $this->storage->content(trim($sub['where']."\n\n".$sub['how']), $format, $files).$this->diagrams($sub['diagrams'], $files).$this->resources($sub['resources'], $format);
 
@@ -190,6 +192,16 @@ final class PageBodyBuilder
     private function link(string $title, ?string $url): string
     {
         return $url === null || $url === '' ? $this->e($title) : sprintf('<a href="%s">%s</a>', $this->e($url), $this->e($title));
+    }
+
+    /**
+     * The context of a node, as a short italic line above its content. Nothing when it is empty.
+     */
+    private function intro(string $context): string
+    {
+        $text = trim((string) preg_replace('/\s+/', ' ', $context));
+
+        return $text === '' ? '' : sprintf('<p><em>%s</em></p>', $this->e($text));
     }
 
     private function firstSentence(string $text): string

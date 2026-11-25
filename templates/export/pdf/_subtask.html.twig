@@ -12,6 +12,7 @@
             {% if sub.criterion is not null %}<span class="chip ok">{{ sub.criterion }}</span>{% endif %}
         </div>
         {% endif %}
+        {% if sub.context is not empty %}<p class="lead">{{ sub.context }}</p>{% endif %}
         {% if sub.what is not empty %}<h5>What</h5><div class="text">{{ sub.what|content_html(doc.format) }}</div>{% endif %}
         {% if sub.why is not empty %}<h5>Why</h5><div class="text">{{ sub.why|content_html(doc.format) }}</div>{% endif %}
         {% if sub.where is not empty %}<h5>Where</h5><div class="text">{{ sub.where|content_html(doc.format) }}</div>{% endif %}

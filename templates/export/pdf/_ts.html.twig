@@ -4,6 +4,7 @@
 {% if ts.featureToggles is not empty %}
     <div style="margin-bottom:6pt">{% for t in ts.featureToggles %}<span class="chip gray">{{ t }}</span>{% endfor %}</div>
 {% endif %}
+{% if ts.context is not empty %}<p class="lead">{{ ts.context }}</p>{% endif %}
 {% if ts.what is not empty %}
     <div class="section-title">What</div>
     <div class="text">{{ ts.what|content_html(doc.format) }}</div>
