@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Analysis Document API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Documentation of the JSON structure describing a functional / technical analysis:
     project, author, dependencies between epics, and the Epic > User Story / Technical Story > Subtask tree.
@@ -158,10 +158,14 @@ components:
           type: string
           examples:
             - E1
+        context:
+          type: string
+          x-widget: textarea
+          description: Short summary of `what` (one or two sentences). Optional.
         what:
           type: string
           x-widget: richtext
-          description: Context of the epic.
+          description: What the epic is about.
         ticket:
           type: string
           description: Ticket identifier (e.g. Jira key).
@@ -243,6 +247,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Resource'
+        context:
+          type: string
+          x-widget: textarea
+          description: Short summary of `what` (one or two sentences). Optional.
         what:
           type: string
           x-widget: richtext
@@ -268,6 +276,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Resource'
+        context:
+          type: string
+          x-widget: textarea
+          description: Short summary of `what` (one or two sentences). Optional.
         what:
           type: string
           x-widget: richtext

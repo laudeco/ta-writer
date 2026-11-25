@@ -142,7 +142,7 @@ final class JsonFileTaRepositoryTest extends TestCase
         $doc = $this->doc() + ['structureVersion' => '42.0.0'];
         $stored = $this->repository->save(null, $doc, 'api');
 
-        self::assertSame('1.0.0', $stored->data['structureVersion']);
+        self::assertSame('1.1.0', $stored->data['structureVersion']);
     }
 
     public function testAnAdapterWriteBackDoesNotIncrementTheVersion(): void

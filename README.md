@@ -108,8 +108,12 @@ Changing the format of the document converts every field on save, and the text f
 Quill is served from `public/assets/vendor/quill` (BSD-3, not a CDN).
 
 **Document versions.** Two fields are set by the server, never by a client:
-- `structureVersion` is the `info.version` of the OpenAPI file. The file is read-only on disk (`chmod 444`), and the
-  form shows it read-only.
+- `structureVersion` is the `info.version` of the OpenAPI file (currently `1.1.0`). The file is read-only on disk
+  (`chmod 444`), and the form shows it read-only. A document saved after a change of the structure takes the new
+  version; that change alone does not create a new content version.
+- `context` (epics, technical stories, sub-tasks) is an optional one-line summary of `what`, typed in a plain field above
+  it. It is shown above the What in the exports and the tickets, and it fills the Context cell of the AGIR pages (the first
+  sentence of `what` is used when it is empty).
 - `version` is the version of the content: `1.0.0` at creation, then the patch number goes up (`1.0.1`, `1.0.2`…) at
   each edit that changes the content, whether it comes from the UI, the API or a restore. A save that changes nothing
   keeps the version. An adapter writing back its ticket keys and page links does not count as an edit.

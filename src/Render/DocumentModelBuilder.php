@@ -30,7 +30,7 @@ final class DocumentModelBuilder
         $nodes = [];
         foreach ($doc['epics'] ?? [] as $e => $epic) {
             $epicModel = $this->node($epic, "/epics/$e", $this->references->title($this->references->epic($doc, $e), (string) $epic['title']));
-            $epicModel += ['what' => (string) ($epic['what'] ?? ''), 'resources' => $epic['resources'] ?? [], 'diagrams' => $epic['diagrams'] ?? [], 'userStories' => [], 'technicalStories' => []];
+            $epicModel += ['context' => (string) ($epic['context'] ?? ''), 'what' => (string) ($epic['what'] ?? ''), 'resources' => $epic['resources'] ?? [], 'diagrams' => $epic['diagrams'] ?? [], 'userStories' => [], 'technicalStories' => []];
             $nodes[] = $epicModel;
 
             foreach ($epic['userStories'] ?? [] as $u => $us) {
@@ -43,7 +43,7 @@ final class DocumentModelBuilder
             foreach ($epic['technicalStories'] ?? [] as $t => $ts) {
                 $tsModel = $this->node($ts, "/epics/$e/technicalStories/$t", $this->references->title($this->references->technicalStory($doc, $e, $t), (string) $ts['title']));
                 $tsModel += [
-                    'what' => (string) ($ts['what'] ?? ''), 'why' => (string) ($ts['why'] ?? ''),
+                    'context' => (string) ($ts['context'] ?? ''), 'what' => (string) ($ts['what'] ?? ''), 'why' => (string) ($ts['why'] ?? ''),
                     'resources' => $ts['resources'] ?? [], 'diagrams' => $ts['diagrams'] ?? [],
                     'acceptanceCriteriaCovered' => array_values($ts['acceptanceCriteriaCovered'] ?? []),
                     'subtasks' => [], 'featureToggles' => [], 'sqlImpact' => null,
@@ -55,7 +55,7 @@ final class DocumentModelBuilder
                     $subModel = $this->node($sub, "/epics/$e/technicalStories/$t/subtasks/$s", $this->references->title($this->references->subtask($doc, $e, $t, $s), (string) $sub['title']));
                     $subModel += [
                         'dependencyRef' => ($ts['reference'] ?? '') !== '' && ($sub['reference'] ?? '') !== '' ? DependencyRef::subtask((string) $ts['reference'], (string) $sub['reference']) : null,
-                        'what' => (string) ($sub['what'] ?? ''), 'why' => (string) ($sub['why'] ?? ''),
+                        'context' => (string) ($sub['context'] ?? ''), 'what' => (string) ($sub['what'] ?? ''), 'why' => (string) ($sub['why'] ?? ''),
                         'where' => (string) ($sub['where'] ?? ''), 'how' => (string) ($sub['how'] ?? ''),
                         'criterion' => $sub['criterion'] ?? null, 'featureToggle' => $sub['featureToggle'] ?? null,
                         'sqlImpact' => $sub['sqlImpact'] ?? null, 'diagrams' => $sub['diagrams'] ?? [], 'resources' => $sub['resources'] ?? [],

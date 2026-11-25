@@ -41,7 +41,7 @@ final class SchemaFormTest extends TestCase
     {
         $file = sys_get_temp_dir().'/ta-form-'.bin2hex(random_bytes(3)).'.yaml';
         $yaml = (string) file_get_contents(self::SCHEMA);
-        $yaml = str_replace("          description: Context of the epic.\n", "          description: Context of the epic.\n        impact:\n          type: string\n          description: Impact of the epic.\n", $yaml);
+        $yaml = str_replace("          description: What the epic is about.\n", "          description: What the epic is about.\n        impact:\n          type: string\n          description: Impact of the epic.\n", $yaml);
         file_put_contents($file, $yaml);
         try {
             $root = (new SchemaFormBuilder(new SchemaProvider($file)))->build();
