@@ -142,11 +142,11 @@ components:
         from:
           type: string
           x-widget: reference
-          description: Reference of the blocking item.
+          description: Reference of the blocking item - an epic, user story or technical story, or a sub-task as `TS/Subtask#n`.
         to:
           type: string
           x-widget: reference
-          description: Reference of the blocked item (is blocked by `from`).
+          description: Reference of the blocked item (is blocked by `from`), same forms as `from`.
 
     Epic:
       type: object

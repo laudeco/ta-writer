@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Validation\Rule;
 
+use App\Reference\DependencyRef;
 use App\Validation\RuleInterface;
 use App\Validation\Violation;
 
 /**
- * `dependencies[]`: `to` is blocked by `from`. Both ends must name an existing item, and the graph must be acyclic.
+ * `dependencies[]`: `to` is blocked by `from`. Both ends must name an existing item (a sub-task as `TS/Subtask#n`), and the graph must be acyclic.
  */
 final class DependencyCycleRule implements RuleInterface
 {
@@ -22,6 +23,11 @@ final class DependencyCycleRule implements RuleInterface
             }
             foreach ($epic['technicalStories'] ?? [] as $ts) {
                 $known[$ts['reference'] ?? ''] = true;
+                foreach ($ts['subtasks'] ?? [] as $sub) {
+                    if (($ts['reference'] ?? '') !== '' && ($sub['reference'] ?? '') !== '') {
+                        $known[DependencyRef::subtask($ts['reference'], $sub['reference'])] = true;
+                    }
+                }
             }
         }
         unset($known['']);
@@ -33,7 +39,7 @@ final class DependencyCycleRule implements RuleInterface
             $to = (string) ($dep['to'] ?? '');
             foreach (['from' => $from, 'to' => $to] as $end => $ref) {
                 if (!isset($known[$ref])) {
-                    $violations[] = new Violation('dependency-reference', "/dependencies/$i/$end", sprintf('"%s" is not an epic, user story or technical story of the document.', $ref));
+                    $violations[] = new Violation('dependency-reference', "/dependencies/$i/$end", sprintf('"%s" is not an epic, user story, technical story or sub-task (TS/Subtask#n) of the document.', $ref));
                 }
             }
             if ($from === $to) {

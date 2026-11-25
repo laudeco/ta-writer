@@ -7,7 +7,8 @@
     var GROUPS = [
         { nav: 'epics', label: 'Epics' },
         { nav: 'userStories', label: 'User stories' },
-        { nav: 'technicalStories', label: 'Technical stories' }
+        { nav: 'technicalStories', label: 'Technical stories' },
+        { nav: 'subtasks', label: 'Subtasks' }
     ];
     var form = null;
     var timer = null;
@@ -31,6 +32,12 @@
             var refs = [];
             items.forEach(function (item) {
                 var ref = ownValue(item, 'reference');
+                if (group.nav === 'subtasks') {
+                    // a sub-task is named by its technical story: TS1/Subtask#1
+                    var story = item.parentElement && item.parentElement.closest('[data-item]');
+                    var storyRef = story ? ownValue(story, 'reference') : '';
+                    ref = storyRef !== '' && ref !== '' ? storyRef + '/' + ref : '';
+                }
                 if (ref !== '') {
                     refs.push({ ref: ref, title: ownValue(item, 'title') });
                 }

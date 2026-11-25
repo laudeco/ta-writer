@@ -9,6 +9,7 @@ use App\Jira\JiraDescriptionBuilder;
 use App\Jira\JiraSyncOptions;
 use App\Jira\JiraTicketSynchronizer;
 use App\Publication\Confluence\DiagramAttachments;
+use App\Reference\DependencyRef;
 use App\Publication\DocumentWriteBack;
 use App\Publication\OptionDefinition;
 use App\Publication\PublisherInterface;
@@ -122,11 +123,12 @@ final class JiraPublisher implements PublisherInterface
 
                     foreach ($ts['subtasks'] as $s => $sub) {
                         $subFiles = $this->diagrams->collect($sub['diagrams'], $tsPrefix.'-st'.($s + 1));
-                        $this->ensureTicket(
+                        $subKey = $this->ensureTicket(
                             $jira, $sync, 'sub', $sub, $tsKey, $options,
                             $this->descriptions->subtask($sub, $format, $subFiles['files']), $subFiles,
                             "/epics/$e/technicalStories/$t/subtasks/$s", $updates, $messages,
                         );
+                        $ticketByRef[DependencyRef::subtask($ts['reference'], $sub['reference'])] = $subKey;
                     }
                 }
             }

@@ -70,6 +70,42 @@ final class RulesTest extends TestCase
         self::assertNotEmpty(array_filter($messages, static fn (string $m): bool => str_contains($m, 'Dependency cycle')));
     }
 
+    public function testASubtaskIsADependencyEndByItsTechnicalStoryName(): void
+    {
+        $doc = [
+            'epics' => [$this->epic([
+                ['reference' => 'TS1', 'subtasks' => [['reference' => 'Subtask#1']]],
+                ['reference' => 'TS2', 'subtasks' => [['reference' => 'Subtask#1']]],
+            ])],
+            'dependencies' => [['from' => 'TS1/Subtask#1', 'to' => 'TS2/Subtask#1']],
+        ];
+
+        self::assertSame([], (new DependencyCycleRule())->check($doc));
+    }
+
+    public function testABareSubtaskReferenceIsAmbiguousAndRejected(): void
+    {
+        $doc = [
+            'epics' => [$this->epic([['reference' => 'TS1', 'subtasks' => [['reference' => 'Subtask#1']]]])],
+            'dependencies' => [['from' => 'Subtask#1', 'to' => 'TS1']],
+        ];
+        $violations = (new DependencyCycleRule())->check($doc);
+
+        self::assertCount(1, $violations);
+        self::assertSame('/dependencies/0/from', $violations[0]->path);
+    }
+
+    public function testASubtaskCannotBlockItself(): void
+    {
+        $doc = [
+            'epics' => [$this->epic([['reference' => 'TS1', 'subtasks' => [['reference' => 'Subtask#1']]]])],
+            'dependencies' => [['from' => 'TS1/Subtask#1', 'to' => 'TS1/Subtask#1']],
+        ];
+        $messages = array_map(static fn ($v) => $v->message, (new DependencyCycleRule())->check($doc));
+
+        self::assertNotEmpty(array_filter($messages, static fn (string $m): bool => str_contains($m, 'cannot block itself')));
+    }
+
     public function testValidDagHasNoViolation(): void
     {
         $doc = [

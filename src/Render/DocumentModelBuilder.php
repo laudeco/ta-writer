@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Render;
 
+use App\Reference\DependencyRef;
 use App\Reference\ReferenceResolver;
 
 /**
@@ -53,6 +54,7 @@ final class DocumentModelBuilder
                 foreach ($ts['subtasks'] ?? [] as $s => $sub) {
                     $subModel = $this->node($sub, "/epics/$e/technicalStories/$t/subtasks/$s", $this->references->title($this->references->subtask($doc, $e, $t, $s), (string) $sub['title']));
                     $subModel += [
+                        'dependencyRef' => ($ts['reference'] ?? '') !== '' && ($sub['reference'] ?? '') !== '' ? DependencyRef::subtask((string) $ts['reference'], (string) $sub['reference']) : null,
                         'what' => (string) ($sub['what'] ?? ''), 'why' => (string) ($sub['why'] ?? ''),
                         'where' => (string) ($sub['where'] ?? ''), 'how' => (string) ($sub['how'] ?? ''),
                         'criterion' => $sub['criterion'] ?? null, 'featureToggle' => $sub['featureToggle'] ?? null,
@@ -76,10 +78,12 @@ final class DocumentModelBuilder
             $epics[] = $epicModel;
         }
 
+        // a sub-task is found by its TS/Subtask name; the other items by their reference
         $index = [];
         foreach ($nodes as $node) {
-            if (($node['reference'] ?? '') !== '' && !isset($index[$node['reference']])) {
-                $index[$node['reference']] = $node;
+            $key = array_key_exists('dependencyRef', $node) ? $node['dependencyRef'] : ($node['reference'] ?? '');
+            if (is_string($key) && $key !== '' && !isset($index[$key])) {
+                $index[$key] = $node;
             }
         }
 

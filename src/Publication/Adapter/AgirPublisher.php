@@ -11,6 +11,7 @@ use App\Jira\JiraClient;
 use App\Jira\JiraSyncOptions;
 use App\Jira\JiraTicketSynchronizer;
 use App\Publication\Agir\ReferencePageCloner;
+use App\Reference\DependencyRef;
 use App\Publication\Confluence\BrowserConfluenceClient;
 use App\Publication\Confluence\ConfluencePagePublisher;
 use App\Publication\Confluence\DiagramAttachments;
@@ -157,7 +158,8 @@ final class AgirPublisher implements PublisherInterface
 
                     foreach ($ts['subtasks'] as $s => $sub) {
                         $path = "/epics/$e/technicalStories/$t/subtasks/$s";
-                        $this->ensureTicket($sync, 'sub', $sub, $options, $tsKey, $path, $updates, $messages);
+                        $subKey = $this->ensureTicket($sync, 'sub', $sub, $options, $tsKey, $path, $updates, $messages);
+                        $ticketByRef[DependencyRef::subtask($ts['reference'], $sub['reference'])] = $subKey;
                         $files = $this->diagrams->collect($sub['diagrams'], $prefix.'-st'.($s + 1));
                         $this->publishPage(
                             $pages, $space, (string) $tsPageId, $sub['displayTitle'], $this->pageId((string) ($sub['pageLink'] ?? '')),
