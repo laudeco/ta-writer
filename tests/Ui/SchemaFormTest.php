@@ -7,6 +7,8 @@ namespace App\Tests\Ui;
 use App\Render\ContentConverter;
 use App\Schema\SchemaProvider;
 use App\Ui\Form\FieldNode;
+use App\Author\AuthorRepository;
+use App\Storage\AtomicFileWriter;
 use App\Ui\Form\FormDataNormalizer;
 use App\Ui\Form\SchemaFormBuilder;
 use PHPUnit\Framework\TestCase;
@@ -66,7 +68,7 @@ final class SchemaFormTest extends TestCase
             ],
             'dependencies' => [['from' => '', 'to' => '']],
         ];
-        $out = (new FormDataNormalizer(new ContentConverter()))->normalize($submitted, $root, 'markdown');
+        $out = (new FormDataNormalizer(new ContentConverter(), new AuthorRepository(sys_get_temp_dir().'/ta-no-authors.json', new AtomicFileWriter())))->normalize($submitted, $root, 'markdown');
 
         self::assertSame('Demo', $out['project']['name']);
         self::assertArrayNotHasKey('username', $out['author']);
@@ -82,7 +84,7 @@ final class SchemaFormTest extends TestCase
         $root = (new SchemaFormBuilder(new SchemaProvider(self::SCHEMA)))->build();
         $sub = ['title' => 's', 'sqlImpact' => ['nbColumns' => '3', 'nbRows' => ' 12 ']];
         $submitted = ['epics' => [['title' => 'e', 'technicalStories' => [['title' => 't', 'subtasks' => [$sub]]]]]];
-        $out = (new FormDataNormalizer(new ContentConverter()))->normalize($submitted, $root, 'markdown');
+        $out = (new FormDataNormalizer(new ContentConverter(), new AuthorRepository(sys_get_temp_dir().'/ta-no-authors.json', new AtomicFileWriter())))->normalize($submitted, $root, 'markdown');
 
         self::assertSame(['nbColumns' => 3, 'nbRows' => 12], $out['epics'][0]['technicalStories'][0]['subtasks'][0]['sqlImpact']);
     }

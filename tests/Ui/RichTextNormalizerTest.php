@@ -7,6 +7,8 @@ namespace App\Tests\Ui;
 use App\Render\ContentConverter;
 use App\Schema\SchemaProvider;
 use App\Ui\Form\FieldNode;
+use App\Author\AuthorRepository;
+use App\Storage\AtomicFileWriter;
 use App\Ui\Form\FormDataNormalizer;
 use App\Ui\Form\SchemaFormBuilder;
 use PHPUnit\Framework\TestCase;
@@ -22,7 +24,7 @@ final class RichTextNormalizerTest extends TestCase
     protected function setUp(): void
     {
         $this->root = (new SchemaFormBuilder(new SchemaProvider(__DIR__.'/../../config/schema/document.openapi.yaml')))->build();
-        $this->normalizer = new FormDataNormalizer(new ContentConverter());
+        $this->normalizer = new FormDataNormalizer(new ContentConverter(), new AuthorRepository(sys_get_temp_dir().'/ta-no-authors.json', new AtomicFileWriter()));
     }
 
     /** @return array<string, mixed> */

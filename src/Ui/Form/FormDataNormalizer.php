@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ui\Form;
 
+use App\Author\AuthorRepository;
 use App\Render\ContentConverter;
 
 /**
@@ -20,8 +21,10 @@ final class FormDataNormalizer
     private string $originalFormat = 'markdown';
     private string $targetFormat = 'markdown';
 
-    public function __construct(private readonly ContentConverter $converter)
-    {
+    public function __construct(
+        private readonly ContentConverter $converter,
+        private readonly AuthorRepository $authors,
+    ) {
     }
 
     /**
@@ -80,6 +83,9 @@ final class FormDataNormalizer
                 // an empty list is kept as it is: documents carry empty lists on purpose (the version check ignores them)
                 return $out === [] ? [] : $out;
 
+            case 'author':
+                return $this->author($raw);
+
             case 'integer':
                 $text = trim((string) (\is_scalar($raw) ? $raw : ''));
 
@@ -135,6 +141,33 @@ final class FormDataNormalizer
         return $this->targetFormat === 'html'
             ? $this->converter->toHtml($html, 'html')
             : $this->converter->convert($html, 'html', $this->targetFormat);
+    }
+
+    /**
+     * The author chosen in the list is copied from the list. An email that is no longer in the list keeps the copy that the
+     * form carries; no email at all leaves the author out (the schema then refuses the document).
+     *
+     * @return array<string, string>|null
+     */
+    private function author(mixed $raw): ?array
+    {
+        $raw = \is_array($raw) ? $raw : [];
+        $email = trim(\is_scalar($raw['email'] ?? null) ? (string) $raw['email'] : '');
+        if ($email === '') {
+            return null;
+        }
+        $listed = $this->authors->find($email);
+        if ($listed !== null) {
+            return $listed->toArray();
+        }
+
+        $copy = ['name' => trim(\is_scalar($raw['name'] ?? null) ? (string) $raw['name'] : ''), 'email' => $email];
+        $username = trim(\is_scalar($raw['username'] ?? null) ? (string) $raw['username'] : '');
+        if ($username !== '') {
+            $copy['username'] = $username;
+        }
+
+        return $copy;
     }
 
     /**

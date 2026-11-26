@@ -120,6 +120,8 @@ components:
 
     Author:
       type: object
+      x-widget: author
+      description: Chosen in the list of authors (Authors page); the document keeps a copy.
       required: [name, email]
       properties:
         name:

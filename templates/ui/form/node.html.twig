@@ -76,6 +76,28 @@
             <textarea class="plain-fallback" name="{{ name }}" rows="3" placeholder="URL, ticket key or text" aria-label="{{ node.label }}"{% if rich_on %} disabled hidden{% endif %}>{{ original }}</textarea>
         {% endif %}
     </div>
+{% elseif node.widget == 'author' %}
+    {# An author chosen in the list (Authors page): the first one is the default of a new analysis. The hidden name and
+       username carry the copy stored in the document, kept when its email is no longer in the list. #}
+    {% set current = value is iterable ? value : {} %}
+    {% set current_email = current.email ?? '' %}
+    {% set listed = author_options() %}
+    {% set listed_emails = listed|map(a => a.email) %}
+    <label class="field author-field">
+        <span>{{ node.label }}{% if node.required %} <span class="req">*</span>{% endif %}</span>
+        <select name="{{ name }}[email]" data-author-select>
+            {% if listed is empty %}<option value="">Add an author first</option>{% endif %}
+            {% for a in listed %}
+                <option value="{{ a.email }}"{% if (current_email == '' and loop.first) or current_email == a.email %} selected{% endif %}>{{ a.name }} &lt;{{ a.email }}&gt;</option>
+            {% endfor %}
+            {% if current_email != '' and current_email not in listed_emails %}
+                <option value="{{ current_email }}" selected>{{ current.name ?? current_email }} &lt;{{ current_email }}&gt; (not in the list)</option>
+            {% endif %}
+        </select>
+        <input type="hidden" name="{{ name }}[name]" value="{{ current.name ?? '' }}">
+        <input type="hidden" name="{{ name }}[username]" value="{{ current.username ?? '' }}">
+        {% if listed is empty %}<small class="help"><a href="/authors">Add an author</a> to choose one.</small>{% endif %}
+    </label>
 {% elseif node.widget == 'reference' %}
     {# A reference of the document: a dropdown filled with the references by references.js. The stored value is kept selected
        even before the script runs, and even when it no longer exists in the document (the validation reports it). #}

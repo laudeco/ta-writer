@@ -41,6 +41,11 @@ final class SchemaFormBuilder
         $placeholder = isset($schema['examples'][0]) ? (string) $schema['examples'][0] : null;
         $type = $schema['type'] ?? 'string';
 
+        // an author is chosen in the list of authors, not typed
+        if ($type === 'object' && ($schema['x-widget'] ?? '') === 'author') {
+            return new FieldNode($name, 'author', $required, $description, null, [], [], null, $readOnly);
+        }
+
         if ($type === 'object') {
             $requiredChildren = $schema['required'] ?? [];
             $children = [];

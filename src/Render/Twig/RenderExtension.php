@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Render\Twig;
 
+use App\Author\AuthorRepository;
 use App\Render\ContentConverter;
 use App\Render\Mermaid\MermaidRenderer;
 use Twig\Extension\AbstractExtension;
@@ -18,6 +19,7 @@ final class RenderExtension extends AbstractExtension
     public function __construct(
         private readonly ContentConverter $converter,
         private readonly MermaidRenderer $mermaid,
+        private readonly AuthorRepository $authors,
     ) {
     }
 
@@ -32,6 +34,8 @@ final class RenderExtension extends AbstractExtension
             new TwigFunction('mermaid_img', [$this, 'mermaidImage'], ['is_safe' => ['html']]),
             // the HTML a Quill editor starts from: checklists and tables in the form Quill reads
             // not marked safe: it goes into an attribute (data-html), so Twig escapes its quotes
+            // the list of authors offered by the author dropdown: name and email, in order (the first one is the default)
+            new TwigFunction('author_options', fn (): array => array_map(static fn ($a): array => ['name' => $a->name, 'email' => $a->email], $this->authors->all())),
             new TwigFunction('rich_html', fn (?string $content, string $format): string => $this->converter->toEditorHtml((string) $content, $format)),
         ];
     }
