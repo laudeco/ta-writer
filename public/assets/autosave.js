@@ -80,6 +80,11 @@
     }
 
     function handleSaved(body, sent) {
+        status.classList.remove('is-error');
+        status.title = '';
+        if (window.TAErrors) {
+            window.TAErrors.clear();
+        }
         if (form.getAttribute('action') === '/documents' && body.id) {
             // the first autosave of a new analysis: the page carries on with the new document
             form.setAttribute('action', '/documents/' + body.id);
@@ -146,9 +151,13 @@
                 return;
             }
             if (result.status === 422 || (body && body.ok === false && body.errors)) {
+                // nothing was stored: the errors are shown on their fields, in the panel above the form
                 var errors = body.errors || [];
-                var first = errors.length ? errors[0].path : '';
-                say('Autosave paused: ' + errors.length + (errors.length === 1 ? ' field needs' : ' fields need') + ' attention' + (first ? ' (' + first + ')' : '') + '.');
+                if (window.TAErrors) {
+                    window.TAErrors.show(errors);
+                }
+                status.classList.add('is-error');
+                say('Not saved: ' + errors.length + (errors.length === 1 ? ' error' : ' errors') + ' to fix. Nothing is stored until they are fixed.');
                 status.title = errors.map(function (e) { return e.path + ': ' + e.message; }).join('\n');
                 return;
             }

@@ -10,6 +10,7 @@
 <script src="/assets/collapse.js" defer></script>
 <script src="/assets/defaults.js" defer></script>
 <script src="/assets/autosave.js" defer></script>
+<script src="/assets/errors.js" defer></script>
 <script src="/assets/childmenu.js" defer></script>
 <script src="/assets/references.js" defer></script>
 {% endblock %}
@@ -76,7 +77,11 @@
         <span><i class="kind-swatch" style="--sw: var(--kind-group)"></i>Group</span>
     </div>
 </details>
-<form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor" data-autosave-seconds="{{ autosave_seconds }}">
+<section class="error-panel" data-error-panel role="alert" hidden>
+    <strong>Not saved: <span data-error-count>0</span> error(s) to fix</strong>
+    <ol class="error-list" data-error-list></ol>
+</section>
+<form method="post" action="{{ id ? '/documents/' ~ id : '/documents' }}" class="editor" id="editor" data-autosave-seconds="{{ autosave_seconds }}" data-errors="{{ (errors ?? [])|json_encode }}">
     {% if id %}<input type="hidden" name="_version" value="{{ version }}">{% endif %}
     {# the format the stored values are written in: the rich fields convert from it when the format changes #}
     <input type="hidden" name="_format_original" value="{{ doc_format }}">
