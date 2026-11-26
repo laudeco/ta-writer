@@ -36,7 +36,15 @@ final class SchemaValidator
         $errors = [];
         foreach ((new ErrorFormatter())->formatKeyed($result->error()) as $path => $messages) {
             foreach ((array) $messages as $message) {
-                $errors[] = ['path' => (string) $path === '' ? '/' : (string) $path, 'message' => (string) $message];
+                $path = (string) $path === '' ? '/' : (string) $path;
+                // a missing field is reported on the field itself, not on the block that holds it
+                if (preg_match('/^The required propert(?:y|ies) \((.+)\) (?:is|are) missing\.?$/', (string) $message, $match) === 1) {
+                    foreach (array_map('trim', explode(',', $match[1])) as $field) {
+                        $errors[] = ['path' => rtrim($path, '/').'/'.$field, 'message' => 'is required'];
+                    }
+                    continue;
+                }
+                $errors[] = ['path' => $path, 'message' => (string) $message];
             }
         }
 
