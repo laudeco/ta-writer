@@ -32,9 +32,19 @@ The full specification is in [`docs/ta-writer-json-ta-tool.md`](docs/ta-writer-j
 ## Quick start
 
 ```sh
+make install            # builds the image, installs the dependencies, creates the first author
+make up                 # starts the stack in the background
+```
+
+`make install` runs `scripts/install.sh`: it asks for the first author (defaults: `git config user.name` and
+`user.email`), or takes `AUTHOR_NAME`, `AUTHOR_EMAIL` and `AUTHOR_USERNAME` from the environment. The author is added
+only while the list of authors is empty, so running it again never duplicates it.
+
+The steps it runs are also available on their own:
+
+```sh
 make build              # builds the PHP 8.1 image
 make composer-install   # installs the PHP dependencies into vendor/
-make up                 # starts the stack in the background
 ```
 
 The API and the (future) UI answer on <http://127.0.0.1:8080>. The server listens on `127.0.0.1` only: the API has no
@@ -232,4 +242,16 @@ Publishes the structure as Jira tickets only, through the REST API v2 with a Per
 Set `JIRA_PAT` in `.env.local`. The options (projects, fix version, issue types, the Epic Link field and the optional
 "Epic Name" field) are asked by the publication page, or given with `--option`. Run a dry run first:
 `php bin/console app:ta:publish <id> --format=jira --dry-run`.
+
+## Authors
+
+The list of authors is kept in `data/authors.json` (`TA_AUTHORS_FILE`, relative to the project). The first author is the
+default of a new analysis. An author is identified by its email, which is unique in the list.
+
+- **Page**: *Authors* in the top bar. Add, change and remove authors there.
+- **Commands**: `make console c="app:author:add \"Name\" name@example.com --username=name"`, `app:author:list`,
+  `app:author:remove <email>`.
+- **In an analysis**, the *Author* section is a dropdown of the list. The analysis keeps a copy of the author it chose
+  (`author: {name, username, email}`): changing or removing an author in the list does not change the analyses that already
+  chose it. An author no longer in the list stays selected, marked "(not in the list)".
 

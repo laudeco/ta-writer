@@ -3,6 +3,7 @@ parameters:
     app.storage_dir: '%kernel.project_dir%/%env(TA_STORAGE_DIR)%'
     app.export_dir: '%kernel.project_dir%/%env(TA_EXPORT_DIR)%'
     app.history_max: '%env(int:TA_HISTORY_MAX)%'
+    app.authors_file: '%kernel.project_dir%/%env(TA_AUTHORS_FILE)%'
     app.autosave_seconds: '%env(int:TA_AUTOSAVE_SECONDS)%'
     app.schema_path: '%kernel.project_dir%/config/schema/document.openapi.yaml'
     app.profile_dir: '%kernel.project_dir%/%env(AGIR_PROFILE_DIR)%'
@@ -30,6 +31,7 @@ services:
             - '../src/Storage/History/VersionMeta.php'
             - '../src/Validation/Violation.php'
             - '../src/Publication/OptionDefinition.php'
+            - '../src/Author/Author.php'
             - '../src/Publication/PublishRequest.php'
             - '../src/Publication/PublishResult.php'
             - '../src/Publication/ExportPath.php'
@@ -53,6 +55,10 @@ services:
             - '../src/Browser/NotAuthenticatedException.php'
 
     App\Storage\TaRepositoryInterface: '@App\Storage\JsonFileTaRepository'
+
+    App\Author\AuthorRepository:
+        arguments:
+            $path: '%app.authors_file%'
     App\Browser\BrowserSessionInterface: '@App\Browser\ChromeSession'
 
     App\Browser\ChromeSession:

@@ -2,10 +2,13 @@ USERID=$(shell id -u)
 GROUPID=$(shell id -g)
 RUN=USERID=$(USERID) GROUPID=$(GROUPID) docker compose run --rm php
 
-.PHONY: help build up start down console composer-install test stan sh publish login-browser
+.PHONY: help build up start down console composer-install test stan sh publish login-browser install
 
 help: ## Shows the available commands
 	@cat $(MAKEFILE_LIST) | grep -e "^[a-zA-Z_\-]*: *.*## *" | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+install: ## Installs TA Writer: image, dependencies, and the first author (asked, or AUTHOR_NAME / AUTHOR_EMAIL)
+	./scripts/install.sh
 
 build: ## Builds the PHP 8.4 image (intl, zip, mbstring, dom, xml, gd, mermaid-cli, Chromium)
 	docker compose build
