@@ -46,7 +46,7 @@ final class FormDataNormalizer
     /**
      * @param array<array-key, mixed>|null $siblings the object holding this node: used by richWhen conditions
      */
-    private function value(mixed $raw, FieldNode $node, ?array $siblings): mixed
+    private function value(mixed $raw, FieldNode $node, ?array $siblings, bool $listItem = false): mixed
     {
         switch ($node->widget) {
             case 'richtext':
@@ -66,7 +66,13 @@ final class FormDataNormalizer
                     }
                 }
 
-                // an object with nothing but empty lists is an empty item
+                // an item of a list is kept even when it is empty: the validation then reports what it lacks (its title),
+                // and its position stays the one the person sees in the form
+                if ($listItem) {
+                    return $out;
+                }
+
+                // an optional object with nothing but empty lists is absent
                 $filled = array_filter($out, static fn (mixed $v): bool => $v !== []);
 
                 return $filled === [] ? null : $out;
@@ -74,7 +80,7 @@ final class FormDataNormalizer
             case 'array':
                 $out = [];
                 foreach (\is_array($raw) ? $raw : [] as $item) {
-                    $value = $this->value($item, $node->item ?? throw new \LogicException('Array without item.'), null);
+                    $value = $this->value($item, $node->item ?? throw new \LogicException('Array without item.'), null, true);
                     if ($value !== null) {
                         $out[] = $value;
                     }

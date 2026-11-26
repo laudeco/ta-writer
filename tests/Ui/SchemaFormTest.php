@@ -75,7 +75,8 @@ final class SchemaFormTest extends TestCase
         self::assertSame('E', $out['epics'][0]['title']);
         self::assertSame([['type' => 'note', 'content' => 'x']], $out['epics'][0]['resources']);
         self::assertArrayNotHasKey('what', $out['epics'][0], 'an empty optional text is dropped');
-        self::assertCount(1, $out['epics'], 'a blank item is dropped');
+        // a blank item is kept where it is, so the validation reports its missing title instead of dropping it silently
+        self::assertCount(2, $out['epics'], 'a blank item is kept');
         self::assertArrayNotHasKey('dependenciesPageLink', $out);
     }
 
