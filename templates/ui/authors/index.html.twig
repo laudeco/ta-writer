@@ -1,0 +1,46 @@
+{% extends 'ui/base.html.twig' %}
+{% block title %}Authors — TA Writer{% endblock %}
+{% block body %}
+<div class="page-head">
+    <div>
+        <p class="eyebrow">Authors</p>
+        <h1>Authors</h1>
+        <p class="sub">The first author is the default of a new analysis. An analysis keeps a copy of the author it chose.</p>
+    </div>
+</div>
+
+{% if authors is empty %}
+    <div class="flash" role="status">No author yet: add the first one below (the install script does it too: <code>make install</code>).</div>
+{% endif %}
+
+<section class="card">
+    <div class="card-head"><strong>Add an author</strong></div>
+    <form method="post" action="/authors" class="author-form">
+        <label class="field"><span>Name <span class="req">*</span></span><input name="name" required></label>
+        <label class="field"><span>Email <span class="req">*</span></span><input type="email" name="email" required></label>
+        <label class="field"><span>Login name</span><input name="username"></label>
+        <div class="savebar"><button type="submit" class="primary">Add author</button></div>
+    </form>
+</section>
+
+<section class="card">
+    <div class="card-head"><strong>Authors</strong><span class="count">{{ authors|length }}</span></div>
+    {% for author in authors %}
+        <form method="post" action="/authors/save" class="author-form author-row">
+            <input type="hidden" name="original" value="{{ author.email }}">
+            <label class="field"><span>Name{% if loop.first %} <span class="pill primary">default</span>{% endif %}</span><input name="name" value="{{ author.name }}" required></label>
+            <label class="field"><span>Email</span><input type="email" name="email" value="{{ author.email }}" required></label>
+            <label class="field"><span>Login name</span><input name="username" value="{{ author.username }}"></label>
+            <div class="savebar">
+                <button type="submit" class="small primary">Save</button>
+            </div>
+        </form>
+        <form method="post" action="/authors/delete" class="author-delete" onsubmit="return confirm('Remove this author? The analyses that chose it keep their copy.');">
+            <input type="hidden" name="email" value="{{ author.email }}">
+            <button type="submit" class="small danger">Remove {{ author.name }}</button>
+        </form>
+    {% else %}
+        <p class="help">No author.</p>
+    {% endfor %}
+</section>
+{% endblock %}

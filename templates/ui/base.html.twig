@@ -15,6 +15,7 @@
     <nav class="topnav" aria-label="Main">
         <a href="/" class="{{ app.request.pathInfo == '/' or app.request.pathInfo starts with '/documents/' and app.request.pathInfo != '/documents/new' ? 'active' : '' }}">Analyses</a>
         <a href="/documents/new" class="{{ app.request.pathInfo == '/documents/new' ? 'active' : '' }}">New analysis</a>
+        <a href="/authors" class="{{ app.request.pathInfo == '/authors' ? 'active' : '' }}">Authors</a>
     </nav>
     <nav class="topnav topnav-end" aria-label="Tools">
         <a href="/api/documents" target="_blank" rel="noopener">API</a>
